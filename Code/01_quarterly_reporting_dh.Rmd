@@ -180,10 +180,7 @@ cases_nephu <- cases_nephu %>%
   dplyr::mutate(signout_date = lubridate::dmy(stringr::str_extract(date_signed_dh, "[0-9]{2}/[0-9]{2}/[0-9]{4}"))) %>% 
   #
   dplyr::filter(signout_date >= quarter_start & signout_date <= quarter_end)
-```
 
-
-```{r}
 # Read in conditions reference list
 # Note: the Conditions Reference List is saved in the Monthly Surveillance Report folder
 root_folder <- str_extract(getwd(), "^.+Epidemiology")
@@ -195,16 +192,12 @@ reference_conditions <- readxl::read_xlsx(file.path(root_folder, subfolder_refer
                                           guess_max = min(100000, Inf)) %>%
   janitor::clean_names() %>% 
   #
-  dplyr::distinct(condition, .keep_all = TRUE) %>% 
-  dplyr::distinct(condition_label, .keep_all = TRUE)
+  dplyr::distinct(condition, .keep_all = TRUE)
 
 # Join condition information to case data
 cases_nephu <- cases_nephu %>% 
   dplyr::left_join(reference_conditions, by = "condition")
-```
 
-
-```{r}
 # Data wrangling
 cases_nephu <- cases_nephu %>% 
   dplyr::mutate(event_date       = lubridate::ymd(event_date),
@@ -221,7 +214,179 @@ cases_nephu <- cases_nephu %>%
   #
   dplyr::arrange(condition,
                  event_date)
+
+# Subset urgent notifications
+urgent_nephu <- cases_nephu %>% 
+  dplyr::filter(condition %in% conditions_urgent)
 ```
+
+
+```{r}
+# Read in outbreak linelist
+outbreaks_nephu <- readxl::read_xlsx(paste0(here::here(), "/Data/NEPHUOutbreakLinelist_", file_date, ".xlsx"),
+                                     sheet     = 1,
+                                     guess_max = min(100000, Inf)) %>% 
+  #
+  janitor::clean_names() %>% 
+  #
+  dplyr::filter(local_government_area %in% nephu_lgas) %>%
+  #
+  dplyr::select(phess_id,
+                event_date,
+                event_name,
+                lga  = local_government_area,
+                lphu = local_public_health_unit,
+                condition,
+                organism_cause,
+                setting = setting_where_exposure_occurred_19,
+                classification = most_recent_case_classfication,
+                investigation_status)
+```
+
+## Total number of notifications signed out for follow-up and percentage with follow-up completed
+
+Data were extracted from PHESS for all notifiable conditions (excluding food-borne or water-borne illness) signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up.
+
+**Total number of notifications signed out for follow-up and number and percentage of notifications with follow-up completed, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")**
+
+```{r}
+#
+cases_signedout <- cases_nephu %>% 
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(signedout_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+cases_completed <- cases_nephu %>% 
+  dplyr::filter(investigation_status == "Completed") %>%
+  #
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+cases_signedout <- cases_signedout %>% 
+  dplyr::left_join(cases_completed, by = c("reporting_group", "short_name")) %>%
+  #
+  replace_na(list(completed_n = 0)) %>% 
+  #
+  janitor::adorn_totals() %>% 
+  #
+  dplyr::mutate(completed_percent = round(completed_n / signedout_n * 100, digits = 1)) %>% 
+  #
+  dplyr::select(reporting_group,
+                short_name,
+                completed_n,
+                signedout_n,
+                completed_percent)
+
+cases_signedout %>% 
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llrrr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Signed out (n)",
+                               "Completed (n)",
+                               "Completed (%)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3:5,
+                          width = "1.5in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(cases_signedout),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>% 
+  #
+  kableExtra::scroll_box(height = "400px")
+```
+
+***
+
+## Total number of urgent notifications signed out for follow-up and percentage with follow-up completed
+
+Data were extracted from PHESS for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up.
+
+Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+```{r}
+#
+urgent_signedout <- urgent_nephu %>%
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(signedout_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+urgent_completed <- urgent_nephu %>% 
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+urgent_signedout <- urgent_signedout %>% 
+  dplyr::left_join(urgent_completed, by = c("reporting_group", "short_name")) %>%
+  #
+  replace_na(list(completed_n = 0)) %>% 
+  #
+  janitor::adorn_totals() %>% 
+  #
+  dplyr::mutate(completed_percent = round(completed_n / signedout_n * 100, digits = 1)) %>% 
+  #
+  dplyr::select(reporting_group,
+                short_name,
+                completed_n,
+                signedout_n,
+                completed_percent)
+
+urgent_signedout %>% 
+  dplyr::mutate(completed_percent = sprintf("%.1f", completed_percent)) %>%
+  #
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llrrr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Signed out (n)",
+                               "Completed (n)",
+                               "Completed (%)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3:5,
+                          width = "1.5in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(urgent_signedout),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
+***
+
+## Total number of outbreaks closed
+
+```{r}
+#
+
+```
+
+***
 
 ## Percentage of urgent conditions responded to within 24 hours
 
@@ -235,7 +400,7 @@ The time between the first sign-out by the Department of Health and the first ac
 
 ### Before manual review
 
-**Time between DH signout and initial LPHU response for urgent notifiable conditions, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Time between DH signout and initial LPHU response for urgent notifiable conditions, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
 #
@@ -341,7 +506,7 @@ linelist_24hr <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_
   dplyr::rename(response_24hr = response_within_24hr)
 ```
 
-**Time between DH signout and initial LPHU response for urgent notifiable conditions, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Time between DH signout and initial LPHU response for urgent notifiable conditions, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
 # Uncomment this step as required
@@ -403,7 +568,7 @@ results_24hr %>%
 
 <br/>
 
-**Urgent notifiable conditions with time between DH signout and initial LPHU response >24 hours, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Urgent notifiable conditions with time between DH signout and initial LPHU response >24 hours, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
 # Uncomment this step as required
@@ -411,7 +576,7 @@ results_24hr %>%
 #
 # <br/>
 #
-# **Urgent notifiable conditions with time between DH signout and initial LPHU response >24 hours, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+# **Urgent notifiable conditions with time between DH signout and initial LPHU response >24 hours, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 #
 linelist_24hr %>%
   dplyr::select(phess_id,
