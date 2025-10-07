@@ -1,0 +1,303 @@
+---
+title: 'DH Quarterly Reporting - Indigenous Status Completion'
+author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
+version_details: "v2.0, 25/09/2025"
+output: 
+  html_document: 
+    code_folding: none
+    toc: true
+    toc_depth: 3
+    toc_float: true
+knit: (function(input, ...) {
+  rmarkdown::render(input, output_file = paste0("2026 Q1", " DH Quarterly Reporting", " Indigenous Status"), output_dir = "../Reports") })
+---
+
+```{css, echo = FALSE}
+/* */ 
+.main-container {
+    max-width: 1000px;
+}
+
+h1.title {
+  font-weight: bold;
+  font-size: 20px;
+  color: #191d43;
+}
+
+h1 {
+  font-weight: bold;
+  font-size: 20px;
+  color: #5bc788;
+}
+
+h2 {
+  font-weight: bold;
+  font-size: 18px;
+  color: #5bc788;
+}
+
+h3 {
+  font-weight: bold;
+  font-size: 16px;
+  color: #5bc788;
+}
+
+body {
+  font-size: 14px;
+}
+
+.infobox {
+  padding: 10px;
+  background: white;
+  color: black;
+  border: 2px solid #5BC788;
+  border-radius: 10px;
+}
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+#
+knitr::opts_chunk$set(echo    = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+options(knitr.kable.NA = '--')
+
+source(paste0(here::here(), "/Code", "/00_setup.R"))
+```
+
+
+```{r}
+#
+source(paste0(here::here(), "/Code", "/00_data_extract.R"))
+```
+
+## Total number of completed notifications with Indigenous status recorded
+
+Data were extracted from PHESS for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up, but were excluded when the final case classification was Rejected or Not Notifiable as these notifications did not undergo full case interview or follow-up. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+
+Indigenous status was classified as recorded when the Indigenous status field in PHESS was any other option than "Missing/Not Stated". The "Missing/Not Stated" option includes situations where Indigenous status has been left blank on the ESF and/or the Indigenous status question was not asked during case interview (Missing) and situations where Indigenous status has been filled out on the ESF and/or asked during the case interview but the respondent has refused to answer the question, was lost to follow-up, or was unsure of their status (Not Stated). There is currently no way to separate out these options in PHESS.
+
+***
+
+### All notifications
+
+```{r}
+#
+indigenous_completed <- cases_nephu %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+indigenous_recorded <- cases_nephu %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
+  dplyr::filter(indigenous_status != "Missing/Not Stated") %>% 
+  #
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(recorded_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+indigenous_completed <- indigenous_completed %>% 
+  dplyr::left_join(indigenous_recorded, by = c("reporting_group", "short_name")) %>%
+  #
+  replace_na(list(recorded_n = 0)) %>% 
+  #
+  janitor::adorn_totals() %>% 
+  #
+  dplyr::mutate(recorded_percent = round(recorded_n / completed_n * 100, digits = 1)) %>% 
+  #
+  dplyr::select(reporting_group,
+                short_name,
+                recorded_n,
+                completed_n,
+                recorded_percent)
+
+results_total <- indigenous_completed %>% 
+  dplyr::filter(reporting_group == "Total")
+```
+
+:::{.infobox}
+`r round(results_total$recorded_percent, digits = 1)`% (`r format(results_total$recorded_n, big.mark = ",")`/`r format(results_total$completed_n, big.mark = ",")`) of all completed notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
+:::
+
+:::{style="height: 1em;"}
+:::
+
+**Number and percentage of notifications with Indigenous status recorded, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+
+```{r}
+#
+indigenous_completed %>% 
+  dplyr::mutate(recorded_percent = sprintf("%.1f", recorded_percent)) %>%
+  #
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llrrr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Indigenous status recorded (n)",
+                               "Completed cases (n)",
+                               "Completed cases with Indigenous status recorded (%)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3:5,
+                          width = "1.5in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(indigenous_completed),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>% 
+  #
+  kableExtra::scroll_box(height = "400px")
+```
+
+***
+
+### Urgent notifications
+
+Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+```{r}
+#
+indigenous_completed <- urgent_nephu %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
+  #
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+indigenous_recorded <- urgent_nephu %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
+  dplyr::filter(indigenous_status != "Missing/Not Stated") %>% 
+  #
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(recorded_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+indigenous_completed <- indigenous_completed %>% 
+  dplyr::left_join(indigenous_recorded, by = c("reporting_group", "short_name")) %>%
+  #
+  replace_na(list(recorded_n = 0)) %>% 
+  #
+  janitor::adorn_totals() %>% 
+  #
+  dplyr::mutate(recorded_percent = round(recorded_n / completed_n * 100, digits = 1)) %>% 
+  #
+  dplyr::select(reporting_group,
+                short_name,
+                recorded_n,
+                completed_n,
+                recorded_percent)
+
+results_total <- indigenous_completed %>% 
+  dplyr::filter(reporting_group == "Total")
+```
+
+:::{.infobox}
+`r sprintf("%.1f", results_total$recorded_percent)`% (`r format(results_total$recorded_n, big.mark = ",")`/`r format(results_total$completed_n, big.mark = ",")`) of all completed urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
+:::
+
+:::{style="height: 1em;"}
+:::
+
+**Number and percentage of urgent notifications with Indigenous status completed, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+
+```{r}
+indigenous_completed %>% 
+  dplyr::mutate(recorded_percent = sprintf("%.1f", recorded_percent)) %>%
+  #
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llrrr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Indigenous status recorded (n)",
+                               "Completed cases (n)",
+                               "Completed cases with Indigenous status recorded (%)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3:5,
+                          width = "1.5in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(indigenous_completed),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
+
+```{r}
+# Uncomment this step as required
+# Add chart title to narrative as required:
+#
+# <br/>
+#
+# **Completed urgent notifications with Indigenous status not recorded, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+# 
+# indigenous_missing <- urgent_nephu %>%
+#   dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
+#   dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
+#   dplyr::filter(indigenous_status == "Missing/Not Stated") %>% 
+#   #
+#   dplyr::arrange(short_name, event_date) %>% 
+#   #
+#   dplyr::select(phess_id,
+#                 short_name,
+#                 event_classification,
+#                 event_date,
+#                 date_signed_dh)
+# 
+# indigenous_missing %>% 
+#   knitr::kable(table.attr  = "style = \"color: black;\"",
+#                format.args = list(big.mark = ","),
+#                align       = "lllcc",
+#                col.names   = c("PHESS ID",
+#                                "Condition",
+#                                "Classification",
+#                                "Notification date",
+#                                "Sign-out date")) %>% 
+#   #
+#   kableExtra::kable_styling(full_width = FALSE,
+#                             position   = "center",
+#                             html_font  = "Arial",
+#                             font_size  = 12) %>%
+#   #
+#   kableExtra::column_spec(4:5,
+#                           width = "1.5in") %>% 
+#   #
+#   kableExtra::row_spec(row  = 0,
+#                        bold = TRUE) %>% 
+#   #
+#   kableExtra::row_spec(nrow(urgent_pending),
+#                        extra_css = "border-bottom: 2px solid lightgray;")
+```
+
+<br/>
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
