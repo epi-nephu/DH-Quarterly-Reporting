@@ -1,0 +1,326 @@
+---
+title: 'DH Quarterly Reporting - Model 1 Incidents'
+author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
+version_details: "v2.0, 25/09/2025"
+output: 
+  html_document: 
+    code_folding: none
+    toc: true
+    toc_depth: 3
+    toc_float: true
+knit: (function(input, ...) {
+  rmarkdown::render(input, output_file = paste0("2026 Q1", " DH Quarterly Reporting", " Model 1 Incidents"), output_dir = "../Reports") })
+---
+
+```{css, echo = FALSE}
+/* */ 
+.main-container {
+    max-width: 1000px;
+}
+
+h1.title {
+  font-weight: bold;
+  font-size: 20px;
+  color: #191d43;
+}
+
+h1 {
+  font-weight: bold;
+  font-size: 20px;
+  color: #5bc788;
+}
+
+h2 {
+  font-weight: bold;
+  font-size: 18px;
+  color: #5bc788;
+}
+
+h3 {
+  font-weight: bold;
+  font-size: 16px;
+  color: #5bc788;
+}
+
+body {
+  font-size: 14px;
+}
+
+.infobox {
+  padding: 10px;
+  background: white;
+  color: black;
+  border: 2px solid #5BC788;
+  border-radius: 10px;
+}
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+#
+knitr::opts_chunk$set(echo    = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+options(knitr.kable.NA = '--')
+
+source(paste0(here::here(), "/Code", "/00_setup.R"))
+```
+
+
+```{r}
+#
+source(paste0(here::here(), "/Code", "/00_data_extract.R"))
+```
+
+## Total number of Model 1 Incidents
+
+Data were extracted from PHESS for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+
+Reporting for this indicator is limited to incidents that were closed/completed during the reporting period. 
+
+Model 1 incidents were defined as:
+
+- Outbreaks of any pathogen
+
+- Measles cases
+
+- Invasive meningococcal disease cases
+
+- Mpox cases
+
+- Locally acquired typhoid, paratyphoid, or Hepatitis A cases
+
+- Locally acquired legionellosis cases (excluding *L. longbeachae*)
+
+- Locally acquired JEV, MEV, dengue, malaria, or yellow fever cases
+
+- Overseas acquired typhoid, paratyphoid, Hepatitis A, or shigellosis cases who work in a high-risk occupation
+
+- Invasive GAS cases where PEP provision was required
+
+- Cases of high consequence pathogens (anthrax, avian influenza, botulism, cholera, diphtheria, HUS, lyssavirus, MERS, plague, polio, rabies, SARS, smallpox, tularemia, or viral haemorrhagic fevers)
+
+```{r}
+# Closed outbreaks
+nephu_incident_outbreaks <- outbreaks_nephu %>% 
+  dplyr::filter(event_classification == "Confirmed") %>%
+  dplyr::filter(investigation_status == "Completed") %>% 
+  dplyr::group_by(organism_cause) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  janitor::adorn_totals()
+
+outbreaks_total <- nephu_incident_outbreaks %>% 
+  dplyr::filter(organism_cause == "Total") %>% 
+  pull(n)
+```
+
+
+```{r}
+# Cases of specified urgent conditions
+nephu_urgent <- cases_nephu %>% 
+  dplyr::filter(condition %in% incident_urgent) %>% 
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::group_by(short_name) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup()
+```
+
+
+```{r}
+# Locally acquired specified urgent conditions
+nephu_local <- cases_nephu %>% 
+  dplyr::filter(condition %in% incident_local) %>% 
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
+  dplyr::filter(is.na(travel_overseas)) %>% 
+  #
+  dplyr::group_by(short_name) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup()
+```
+
+
+```{r}
+# Cases of specified high consequence conditions
+nephu_rare <- cases_nephu %>% 
+  dplyr::filter(condition %in% incident_rare) %>% 
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::group_by(short_name) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup()
+```
+
+
+```{r}
+# Overseas acquired specified enteric cases who work in high-risk occupation
+nephu_highrisk <- cases_nephu %>% 
+  dplyr::filter(condition %in% incident_highrisk) %>% 
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
+  dplyr::filter(travel_overseas == "Yes") %>%
+  dplyr::filter(work_status == "Employed")
+
+# Create and export the linelist of cases that need manual checking
+# Uncomment this section as required
+# nephu_highrisk <- nephu_highrisk %>%
+#   dplyr::arrange(short_name,
+#                  event_date) %>%
+#   #
+#   dplyr::mutate(event_date = format(event_date, "%d/%m/%Y")) %>%
+#   #
+#   dplyr::select(`PHESS ID` = phess_id,
+#                 `Event date` = event_date,
+#                 `Condition` = short_name,
+#                 `Final event classification` = event_classification,
+#                 `Occupation` = occupation) %>%
+#   #
+#   dplyr::mutate(`High risk` = "")
+#  
+# writexl::write_xlsx(nephu_highrisk,
+#                     paste0(here::here(), "/Data", "/ManualReview_", "HighRisk_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+
+# Read in results of manual review
+# Uncomment this section as required
+nephu_highrisk <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "HighRisk_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
+                                   sheet     = 1,
+                                   guess_max = min(100000, Inf)) %>%
+  #
+  janitor::clean_names()
+
+nephu_highrisk <- nephu_highrisk %>% 
+  dplyr::filter(high_risk == "Yes") %>% 
+  #
+  dplyr::rename(short_name = condition) %>% 
+  #
+  dplyr::group_by(short_name) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup()
+```
+
+
+```{r}
+# Invasive GAS where PEP provision was required
+nephu_pep <- cases_nephu %>% 
+  dplyr::filter(condition == "Invasive Group A Streptococcus") %>% 
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed"))
+
+# Create and export the linelist of cases that need manual checking
+# Uncomment this section as required
+# nephu_pep <- nephu_pep %>%
+#   dplyr::arrange(short_name,
+#                  event_date) %>%
+#   #
+#   dplyr::mutate(event_date = format(event_date, "%d/%m/%Y")) %>%
+#   #
+#   dplyr::select(`PHESS ID` = phess_id,
+#                 `Event date` = event_date,
+#                 `Condition` = short_name,
+#                 `Final event classification` = event_classification) %>%
+#   #
+#   dplyr::mutate(`PEP provided` = "")
+# 
+# writexl::write_xlsx(nephu_pep,
+#                     paste0(here::here(), "/Data", "/ManualReview_", "PEP_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+
+# Read in results of manual review
+# Uncomment this section as required
+nephu_pep <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "PEP_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
+                                   sheet     = 1,
+                                   guess_max = min(100000, Inf)) %>%
+  #
+  janitor::clean_names()
+
+nephu_pep <- nephu_pep %>% 
+  dplyr::filter(pep_provided == "Yes") %>% 
+  #
+  dplyr::rename(short_name = condition) %>% 
+  #
+  dplyr::group_by(short_name) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup()
+```
+
+
+```{r}
+#
+nephu_incident_cases <- nephu_urgent %>% 
+  dplyr::bind_rows(nephu_local) %>% 
+  dplyr::bind_rows(nephu_rare) %>% 
+  dplyr::bind_rows(nephu_highrisk) %>% 
+  dplyr::bind_rows(nephu_pep) %>% 
+  #
+  janitor::adorn_totals()
+
+cases_total <- nephu_incident_cases %>% 
+  dplyr::filter(short_name == "Total") %>% 
+  pull(n)
+```
+
+***
+
+:::{.infobox}
+There were `r cases_total + outbreaks_total` Model 1 incidents (`r outbreaks_total` outbreaks and `r cases_total` cases) closed/completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+:::
+
+:::{style="height: 1em;"}
+:::
+
+**Closed outbreaks notified between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU, by causative organism**
+
+```{r}
+#
+nephu_incident_outbreaks %>% 
+  knitr::kable(table.attr = "style = \"color: black;\"",
+               align      = "lr",
+               col.names  = c("Condition",
+                              "Closed outbreaks (n)")) %>%
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>%
+  #
+  kableExtra::row_spec(nrow(nephu_incident_outbreaks),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
+***
+
+**Model 1 incident cases completed between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU, by condition**
+
+```{r}
+#
+nephu_incident_cases %>% 
+  knitr::kable(table.attr = "style = \"color: black;\"",
+               align      = "lr",
+               col.names  = c("Condition",
+                              "Completed cases (n)")) %>%
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>%
+  #
+  kableExtra::row_spec(nrow(nephu_incident_cases),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
+<br/>
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
