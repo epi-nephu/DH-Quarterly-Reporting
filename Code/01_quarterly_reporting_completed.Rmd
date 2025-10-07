@@ -1,0 +1,310 @@
+---
+title: 'DH Quarterly Reporting - Completed Notifications'
+author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
+version_details: "v2.0, 25/09/2025"
+output: 
+  html_document: 
+    code_folding: none
+    toc: true
+    toc_depth: 3
+    toc_float: true
+knit: (function(input, ...) {
+  rmarkdown::render(input, output_file = paste0("2026 Q1", " DH Quarterly Reporting", " Completed Notifications"), output_dir = "../Reports") })
+---
+
+```{css, echo = FALSE}
+/* */ 
+.main-container {
+    max-width: 1000px;
+}
+
+h1.title {
+  font-weight: bold;
+  font-size: 20px;
+  color: #191d43;
+}
+
+h1 {
+  font-weight: bold;
+  font-size: 20px;
+  color: #5bc788;
+}
+
+h2 {
+  font-weight: bold;
+  font-size: 18px;
+  color: #5bc788;
+}
+
+h3 {
+  font-weight: bold;
+  font-size: 16px;
+  color: #5bc788;
+}
+
+body {
+  font-size: 14px;
+}
+
+.infobox {
+  padding: 10px;
+  background: white;
+  color: black;
+  border: 2px solid #5BC788;
+  border-radius: 10px;
+}
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+#
+knitr::opts_chunk$set(echo    = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+options(knitr.kable.NA = '--')
+
+source(paste0(here::here(), "/Code", "/00_setup.R"))
+```
+
+
+```{r}
+#
+source(paste0(here::here(), "/Code", "/00_data_extract.R"))
+```
+
+## Total number of notifications signed out for follow-up and percentage with follow-up completed
+
+Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+
+***
+
+### All notifications
+
+```{r}
+#
+cases_signedout <- cases_nephu %>% 
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(signedout_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+cases_completed <- cases_nephu %>% 
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  #
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+cases_signedout <- cases_signedout %>% 
+  dplyr::left_join(cases_completed, by = c("reporting_group", "short_name")) %>%
+  #
+  replace_na(list(completed_n = 0)) %>% 
+  #
+  janitor::adorn_totals() %>% 
+  #
+  dplyr::mutate(completed_percent = round(completed_n / signedout_n * 100, digits = 1)) %>% 
+  #
+  dplyr::select(reporting_group,
+                short_name,
+                completed_n,
+                signedout_n,
+                completed_percent)
+
+results_total <- cases_signedout %>% 
+  dplyr::filter(reporting_group == "Total")
+```
+
+:::{.infobox}
+`r round(results_total$completed_percent, digits = 1)`% (`r format(results_total$completed_n, big.mark = ",")`/`r format(results_total$signedout_n, big.mark = ",")`) of all notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` were completed at the time of reporting.
+:::
+
+:::{style="height: 1em;"}
+:::
+
+**Total number of notifications signed out for follow-up and number and percentage of notifications with follow-up completed, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+
+```{r}
+#
+cases_signedout %>% 
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llrrr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Completed (n)",
+                               "Signed out (n)",
+                               "Completed (%)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3:5,
+                          width = "1.5in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(cases_signedout),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>% 
+  #
+  kableExtra::scroll_box(height = "400px")
+```
+
+***
+
+### Urgent notifications
+
+Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+```{r}
+#
+urgent_signedout <- urgent_nephu %>%
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(signedout_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+urgent_completed <- urgent_nephu %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  #
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name)
+
+urgent_signedout <- urgent_signedout %>% 
+  dplyr::left_join(urgent_completed, by = c("reporting_group", "short_name")) %>%
+  #
+  replace_na(list(completed_n = 0)) %>% 
+  #
+  janitor::adorn_totals() %>% 
+  #
+  dplyr::mutate(completed_percent = round(completed_n / signedout_n * 100, digits = 1)) %>% 
+  #
+  dplyr::select(reporting_group,
+                short_name,
+                completed_n,
+                signedout_n,
+                completed_percent)
+
+results_total <- urgent_signedout %>% 
+  dplyr::filter(reporting_group == "Total")
+```
+
+:::{.infobox}
+`r round(results_total$completed_percent, digits = 1)`% (`r format(results_total$completed_n, big.mark = ",")`/`r format(results_total$signedout_n, big.mark = ",")`) of all urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` were completed at the time of reporting.
+:::
+
+:::{style="height: 1em;"}
+:::
+
+**Total number of urgent notifications signed out for follow-up and number and percentage of urgent notifications with follow-up completed, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+
+```{r}
+#
+urgent_signedout %>% 
+  dplyr::mutate(completed_percent = sprintf("%.1f", completed_percent)) %>%
+  #
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llrrr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Completed (n)",
+                               "Signed out (n)",
+                               "Completed (%)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3:5,
+                          width = "1.5in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(urgent_signedout),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
+
+```{r}
+# Create and export the linelist of cases that need manual checking
+# Uncomment this code chunk as required
+# 
+# urgent_pending <- urgent_nephu %>%
+#   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>% 
+#   #
+#   dplyr::arrange(short_name, event_date) %>%
+#   #
+#   dplyr::mutate(event_date       = format(event_date, "%d/%m/%Y"),
+#                 date_signed_dh   = format(date_signed_dh, "%d/%m/%Y %H:%M")) %>%
+#   #
+#   dplyr::select(`PHESS ID` = phess_id,
+#                 `Event date` = event_date,
+#                 `Condition` = short_name,
+#                 `Final event classification` = event_classification,
+#                 `Signed out by DH` = date_signed_dh) %>%
+#   #
+#   dplyr::mutate(`Notes` = "")
+#  
+# writexl::write_xlsx(urgent_pending,
+#                     paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+```
+
+**Urgent notifications signed out with follow-up in progress, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+
+```{r}
+# Uncomment this step as required
+# Add chart title to narrative as required:
+
+# **Urgent notifications signed out with follow-up in progress, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+
+# Read in results of manual review
+urgent_pending <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
+                                   sheet     = 1,
+                                   guess_max = min(100000, Inf)) %>%
+  #
+  janitor::clean_names()
+
+urgent_pending %>% 
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "lcllcl",
+               col.names   = c("PHESS ID",
+                               "Notification date",
+                               "Condition",
+                               "Classification",
+                               "Sign-out date",
+                               "Notes")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(c(2, 5),
+                          width = "1.5in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(urgent_pending),
+                       extra_css = "border-bottom: 2px solid lightgray;")
+```
+
+<br/>
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
