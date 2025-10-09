@@ -241,8 +241,10 @@ urgent_signedout %>%
 
 
 ```{r}
-# Create and export the linelist of cases that need manual checking
+################################################################################ 
 # Uncomment this code chunk as required
+################################################################################
+# Create and export the linelist of cases that need manual checking
 # 
 # urgent_pending <- urgent_nephu %>%
 #   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>% 
@@ -267,11 +269,6 @@ urgent_signedout %>%
 **Urgent notifications signed out with follow-up in progress, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
-# Uncomment this step as required
-# Add chart title to narrative as required:
-
-# **Urgent notifications signed out with follow-up in progress, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
-
 # Read in results of manual review
 urgent_pending <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
                                    sheet     = 1,
@@ -279,7 +276,7 @@ urgent_pending <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview
   #
   janitor::clean_names()
 
-urgent_pending %>% 
+urgent_pending %>%
   knitr::kable(table.attr  = "style = \"color: black;\"",
                format.args = list(big.mark = ","),
                align       = "lcllcl",
@@ -288,7 +285,7 @@ urgent_pending %>%
                                "Condition",
                                "Classification",
                                "Sign-out date",
-                               "Notes")) %>% 
+                               "Notes")) %>%
   #
   kableExtra::kable_styling(full_width = FALSE,
                             position   = "center",
@@ -296,10 +293,10 @@ urgent_pending %>%
                             font_size  = 12) %>%
   #
   kableExtra::column_spec(c(2, 5),
-                          width = "1.5in") %>% 
+                          width = "1.5in") %>%
   #
   kableExtra::row_spec(row  = 0,
-                       bold = TRUE) %>% 
+                       bold = TRUE) %>%
   #
   kableExtra::row_spec(nrow(urgent_pending),
                        extra_css = "border-bottom: 2px solid lightgray;")
