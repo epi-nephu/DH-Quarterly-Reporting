@@ -19,7 +19,9 @@ con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 0)
 phar_nephu <- DBI::dbGetQuery(con,
                               glue::glue("SELECT * FROM dh_public_health.phess_release.caseevents
                                           WHERE EVENT_DATE >= DATE '{lookback_start}'
-                                          AND EVENT_DATE <= DATE '{quarter_end}'")) %>% 
+                                          AND EVENT_DATE <= DATE '{quarter_end}'
+                                          AND (LGA IN ({lga_name_sql})
+                                               OR ASSIGNED_LPHU = 'North Eastern')")) %>% 
   janitor::clean_names() %>% 
   #
   dplyr::filter(event_type %in% c("Case", "Contact/exposed person")) %>%
@@ -29,8 +31,6 @@ phar_nephu <- DBI::dbGetQuery(con,
                                   "Blood lead greater than 5 ug/dL",
                                   "Tuberculosis",
                                   "Non-notifiable")) %>% 
-  #
-  dplyr::filter(lga %in% nephu_lgas | assigned_lphu == "North Eastern") %>% 
   #
   dplyr::mutate(condition = dplyr::case_when(
     organism_cause == "Legionella longbeachae" ~ "Legionella longbeachae",
