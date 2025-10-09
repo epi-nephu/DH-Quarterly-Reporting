@@ -75,7 +75,7 @@ source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 
 ## Total number of Model 1 Incidents
 
-Data were extracted from PHESS for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
 
 Reporting for this indicator is limited to incidents that were closed/completed during the reporting period. 
 
@@ -167,8 +167,10 @@ nephu_highrisk <- cases_nephu %>%
   dplyr::filter(travel_overseas == "Yes") %>%
   dplyr::filter(work_status == "Employed")
 
-# Create and export the linelist of cases that need manual checking
+################################################################################
 # Uncomment this section as required
+################################################################################
+# Create and export the linelist of cases that need manual checking
 # nephu_highrisk <- nephu_highrisk %>%
 #   dplyr::arrange(short_name,
 #                  event_date) %>%
@@ -185,9 +187,8 @@ nephu_highrisk <- cases_nephu %>%
 #  
 # writexl::write_xlsx(nephu_highrisk,
 #                     paste0(here::here(), "/Data", "/ManualReview_", "HighRisk_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
-
+################################################################################
 # Read in results of manual review
-# Uncomment this section as required
 nephu_highrisk <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "HighRisk_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
                                    sheet     = 1,
                                    guess_max = min(100000, Inf)) %>%
@@ -212,8 +213,10 @@ nephu_pep <- cases_nephu %>%
   dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
   dplyr::filter(investigation_status %in% c("Completed", "Reviewed"))
 
-# Create and export the linelist of cases that need manual checking
+################################################################################
 # Uncomment this section as required
+################################################################################
+# Create and export the linelist of cases that need manual checking
 # nephu_pep <- nephu_pep %>%
 #   dplyr::arrange(short_name,
 #                  event_date) %>%
@@ -229,9 +232,8 @@ nephu_pep <- cases_nephu %>%
 # 
 # writexl::write_xlsx(nephu_pep,
 #                     paste0(here::here(), "/Data", "/ManualReview_", "PEP_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
-
+################################################################################
 # Read in results of manual review
-# Uncomment this section as required
 nephu_pep <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "PEP_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
                                    sheet     = 1,
                                    guess_max = min(100000, Inf)) %>%
