@@ -75,7 +75,7 @@ source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 
 ## Percentage of urgent conditions responded to within 24 hours
 
-Data were extracted from PHESS for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up.
+Data were extracted from PHESS via PHAR for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up.
 
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
 
@@ -146,8 +146,10 @@ results_24hr %>%
 
 
 ```{r}
-# Create and export the linelist of cases that need manual checking
+################################################################################
 # Uncomment this code chunk as required
+################################################################################
+# Create and export the linelist of cases that need manual checking
 # manual_24hr <- urgent_nephu %>%
 #   dplyr::filter(response_24hr == "More than 24hr") %>%
 #   #
@@ -167,7 +169,7 @@ results_24hr %>%
 #   #
 #   dplyr::mutate(`Notes` = "",
 #                 `Response within 24hr` = "")
- 
+# 
 # writexl::write_xlsx(manual_24hr,
 #                     paste0(here::here(), "/Data", "/ManualReview_", "24hr_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ```
@@ -178,7 +180,6 @@ results_24hr %>%
 
 ```{r}
 # Read in results of manual review
-# Uncomment this code chunk as required
 linelist_24hr <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "24hr_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
                                    sheet     = 1,
                                    guess_max = min(100000, Inf)) %>%
@@ -186,11 +187,8 @@ linelist_24hr <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_
   janitor::clean_names() %>%
   #
   dplyr::rename(response_24hr = response_within_24hr)
-```
 
-
-```{r}
-# Uncomment this step as required
+# Merge data from manual review
 urgent_nephu <- urgent_nephu %>%
   dplyr::rows_update(linelist_24hr %>%
                        dplyr::select(phess_id,
@@ -225,7 +223,7 @@ results_total <- results_24hr %>%
 ```
 
 :::{.infobox}
-`r results_total$percent_within_24hr`% (`r format(results_total$within_24hr, big.mark = ",")`/`r format(results_total$within_24hr + results_total$more_than_24hr, big.mark = ",")`) of all urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` were completed at the time of reporting.
+`r results_total$percent_within_24hr`% (`r format(results_total$within_24hr, big.mark = ",")`/`r format(results_total$within_24hr + results_total$more_than_24hr, big.mark = ",")`) of all urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had an initial response within 24hr of sign out.
 :::
 
 :::{style="height: 1em;"}
@@ -234,11 +232,7 @@ results_total <- results_24hr %>%
 **Time between DH signout and initial LPHU response for urgent notifiable conditions, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
-# Uncomment this step as required
-# Add chart title to narrative as required:
-
-# **Time between DH signout and initial LPHU response for urgent notifiable conditions, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
-
+#
 results_24hr %>%
   knitr::kable(table.attr = "style = \"color: black;\"",
                align      = "lrrr",
@@ -268,7 +262,9 @@ results_24hr %>%
 
 
 ```{r}
-# Uncomment this step as required
+################################################################################
+# Uncomment this code chunk as required
+################################################################################
 # Add chart title to narrative as required:
 #
 # **Urgent notifiable conditions with time between DH signout and initial LPHU response >24 hours, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
