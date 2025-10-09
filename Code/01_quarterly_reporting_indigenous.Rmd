@@ -75,7 +75,7 @@ source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 
 ## Total number of completed notifications with Indigenous status recorded
 
-Data were extracted from PHESS for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up, but were excluded when the final case classification was Rejected or Not Notifiable as these notifications did not undergo full case interview or follow-up. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up, but were excluded when the final case classification was Rejected or Not Notifiable as these notifications did not undergo full case interview or follow-up. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
 
 Indigenous status was classified as recorded when the Indigenous status field in PHESS was any other option than "Missing/Not Stated". The "Missing/Not Stated" option includes situations where Indigenous status has been left blank on the ESF and/or the Indigenous status question was not asked during case interview (Missing) and situations where Indigenous status has been filled out on the ESF and/or asked during the case interview but the respondent has refused to answer the question, was lost to follow-up, or was unsure of their status (Not Stated). There is currently no way to separate out these options in PHESS.
 
@@ -253,7 +253,9 @@ indigenous_completed %>%
 
 
 ```{r}
-# Uncomment this step as required
+################################################################################
+# Uncomment this code chunk as required
+################################################################################
 # Add chart title to narrative as required:
 #
 # <br/>
