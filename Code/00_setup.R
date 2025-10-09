@@ -38,6 +38,8 @@ nephu_lgas <- c("Banyule (C)", "Boroondara (C)", "Darebin (C)", "Hume (C)",
                 "Knox (C)", "Manningham (C)", "Maroondah (C)", "Nillumbik (S)",
                 "Whitehorse (C)", "Whittlesea (C)", "Yarra (C)", "Yarra Ranges (S)")
 
+lga_name_sql <- glue::glue_collapse(glue::glue("'{nephu_lgas}'"), sep = ", ")
+
 # Urgent conditions (FBWB disease excluded)
 conditions_urgent <- c("Anthrax", 
                        "Botulism", 
