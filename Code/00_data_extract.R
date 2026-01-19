@@ -1,6 +1,6 @@
 # DH Quarterly Reporting
 # Author: Alana Little, NEPHU (alana.little@austin.org.au)
-# Version 2.0, 25/09/2025
+# Version 2.1, 19/01/2026
 
 # Data extraction from PHAR for DH Quarterly Reporting
 
@@ -8,7 +8,7 @@
 # Austin proxy shenanigans
 ################################################################################
 # Note: useProxy = 1 when in Austin offices, useProxy = 0 when WFH
-con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 0)
+con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 1)
 
 ################################################################################
 # Extract case and outbreak data from PHAR
@@ -45,7 +45,10 @@ phar_nephu <- DBI::dbGetQuery(con,
                 lga,
                 assigned_lphu,
                 indigenous_status,
-                investigation_status)
+                investigation_status,
+                investigation_completed_date,
+                reinvestigation_status,
+                reinvestigation_status_date)
 
 # Select all notifications signed out to LPHUs for follow-up during reporting period
 phar_signouts <- DBI::dbGetQuery(con,
@@ -56,19 +59,6 @@ phar_signouts <- DBI::dbGetQuery(con,
   dplyr::select(phess_id = event_id,
                 datetime_signed_dh = epi_noted_when,
                 datetime_signed_lphu = epi_ticked_acknowledged_when)
-
-# Select all notifications that were confirmed, probable, or suspected at any point during follow-up
-phar_classification <- DBI::dbGetQuery(con,
-                                       glue::glue("SELECT * FROM dh_public_health.phess_release.caseevents_classifications")) %>% 
-  janitor::clean_names() %>% 
-  #
-  dplyr::filter(event_classification %in% c("Confirmed", "Probable", "Suspected")) %>%
-  #
-  dplyr::distinct(event_id) %>% 
-  #
-  dplyr::rename(phess_id = event_id) %>% 
-  #
-  dplyr::mutate(meets_inclusion = "Yes")
 
 # Select risk factor information for Model 1 incident calculations
 phar_risk <- DBI::dbGetQuery(con,
@@ -118,19 +108,12 @@ outbreaks_nephu <- phar_outbreaks %>%
 ################################################################################
 # Restrict to notifications signed out by DH during reporting period
 cases_nephu <- phar_nephu %>%
-  dplyr::left_join(phar_classification, by = "phess_id") %>% 
   dplyr::left_join(phar_signouts, by = "phess_id") %>%
-  #
-  dplyr::filter(!is.na(meets_inclusion)) %>% 
   #
   dplyr::mutate(date_signed_dh   = lubridate::date(datetime_signed_dh),
                 date_signed_lphu = lubridate::date(datetime_signed_lphu)) %>%
   #
-  dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) %>% 
-  #
-  dplyr::arrange(phess_id, date_signed_dh) %>% 
-  #
-  dplyr::distinct(phess_id, .keep_all = TRUE)
+  dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) 
 
 # Read in conditions reference list
 reference_conditions <- readxl::read_xlsx(paste0(here::here(), "/Data/ConditionsReferenceList", ".xlsx"),
@@ -150,7 +133,24 @@ cases_nephu <- cases_nephu %>%
   dplyr::left_join(phar_risk, by = "phess_id") %>% 
   dplyr::left_join(phar_occupation, by = "phess_id")
 
-# Some more data wrangling
+################################################################################
+# Subset urgent notifications
+################################################################################
+urgent_nephu <- cases_nephu %>% 
+  dplyr::filter(condition %in% conditions_urgent)
+
+
+
+
+
+# Dedup - completion and Aboriginal status indicators - keep one row per case
+# Completion - investigation_completed_date or reinvestigation_status_date in reporting period
+cases_nephu %>% 
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE)
+
+# Some more data wrangling - response within 24hr indicator - need to dedup and keep first signout
 cases_nephu <- cases_nephu %>% 
   dplyr::mutate(datetime_signed_dh   = lubridate::ymd_hms(datetime_signed_dh),
                 datetime_signed_lphu = lubridate::ymd_hms(datetime_signed_lphu),
@@ -169,9 +169,5 @@ cases_nephu <- cases_nephu %>%
   dplyr::arrange(condition,
                  event_date)
 
-################################################################################
-# Subset urgent notifications
-################################################################################
-urgent_nephu <- cases_nephu %>% 
-  dplyr::filter(condition %in% conditions_urgent)
+
 

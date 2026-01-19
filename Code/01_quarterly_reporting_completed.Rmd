@@ -1,7 +1,7 @@
 ---
 title: 'DH Quarterly Reporting - Completed Notifications'
 author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
-version_details: "v2.0, 25/09/2025"
+version_details: "v2.1, 19/01/2026"
 output: 
   html_document: 
     code_folding: none
@@ -9,7 +9,7 @@ output:
     toc_depth: 3
     toc_float: true
 knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q1", " DH Quarterly Reporting", " Completed Notifications"), output_dir = "../Reports") })
+  rmarkdown::render(input, output_file = paste0("2026 Q2", " DH Quarterly Reporting", " Completed Notifications"), output_dir = "../Reports") })
 ---
 
 ```{css, echo = FALSE}
@@ -75,7 +75,7 @@ source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 
 ## Total number of notifications signed out for follow-up and percentage with follow-up completed
 
-Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were included in the analyses if they were classified as suspected, probable, or confirmed at any point during follow-up. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Both initial notifications and reinvestigations signed out for follow-up were included. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
 
 ***
 
@@ -83,7 +83,11 @@ Data were extracted from PHESS via PHAR for all notifiable conditions signed out
 
 ```{r}
 #
-cases_signedout <- cases_nephu %>% 
+cases_signedout <- cases_nephu %>%
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
+  #
   dplyr::group_by(reporting_group, short_name) %>% 
   dplyr::summarise(signedout_n = n()) %>% 
   dplyr::ungroup() %>% 
@@ -91,7 +95,11 @@ cases_signedout <- cases_nephu %>%
   dplyr::arrange(reporting_group, short_name)
 
 cases_completed <- cases_nephu %>% 
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
+  #
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE) %>%  
   #
   dplyr::group_by(reporting_group, short_name) %>% 
   dplyr::summarise(completed_n = n()) %>% 
@@ -159,13 +167,19 @@ cases_signedout %>%
 
 ***
 
-### Urgent notifications
+### All urgent notifications
 
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+All urgent notifications (final event classification confirmed, probable, suspected, at risk, not notifiable, or rejected) were included.
 
 ```{r}
 #
 urgent_signedout <- urgent_nephu %>%
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
+  #
   dplyr::group_by(reporting_group, short_name) %>% 
   dplyr::summarise(signedout_n = n()) %>% 
   dplyr::ungroup() %>% 
@@ -173,7 +187,11 @@ urgent_signedout <- urgent_nephu %>%
   dplyr::arrange(reporting_group, short_name)
 
 urgent_completed <- urgent_nephu %>%
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
+  #
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
   #
   dplyr::group_by(reporting_group, short_name) %>% 
   dplyr::summarise(completed_n = n()) %>% 
@@ -244,10 +262,10 @@ urgent_signedout %>%
 ################################################################################ 
 # Uncomment this code chunk as required
 ################################################################################
-# Create and export the linelist of cases that need manual checking
+# Create and export the linelist of urgent cases that need manual checking
 # 
 # urgent_pending <- urgent_nephu %>%
-#   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>% 
+#   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>%
 #   #
 #   dplyr::arrange(short_name, event_date) %>%
 #   #
@@ -261,7 +279,7 @@ urgent_signedout %>%
 #                 `Signed out by DH` = date_signed_dh) %>%
 #   #
 #   dplyr::mutate(`Notes` = "")
-#  
+# 
 # writexl::write_xlsx(urgent_pending,
 #                     paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ```
