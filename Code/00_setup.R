@@ -1,6 +1,6 @@
 # DH Quarterly Reporting
 # Author: Alana Little, NEPHU (alana.little@austin.org.au)
-# Version 2.1, 19/01/2026
+# Version 2.1, 12/01/2026
 
 # Setup for DH Quarterly Reporting
 
@@ -23,10 +23,10 @@ pacman::p_load(tidyverse,
                writexl)
 
 ################################################################################
-# Define dates for reporting and lookback period
+# Define dates for reporting period
 ################################################################################
-# Lookback period for selecting notifications has some padding to pick up cases signed out during reporting period but with an event date in the previous quarter
-lookback_start <- lubridate::ymd("2025-07-01")
+integration_start <- lubridate::ymd("2022-06-30")
+
 quarter_start  <- lubridate::ymd("2025-10-01")
 quarter_end    <- lubridate::ymd("2025-12-31")
 

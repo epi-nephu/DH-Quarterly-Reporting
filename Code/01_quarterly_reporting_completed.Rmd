@@ -1,7 +1,7 @@
 ---
 title: 'DH Quarterly Reporting - Completed Notifications'
 author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
-version_details: "v2.1, 19/01/2026"
+version_details: "v2.1, 12/01/2026"
 output: 
   html_document: 
     code_folding: none
@@ -73,188 +73,357 @@ source(paste0(here::here(), "/Code", "/00_setup.R"))
 source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 ```
 
-## Total number of notifications signed out for follow-up and percentage with follow-up completed
+:::{.infobox}
+**SQ1.5** Percentage of case follow-up marked as completed for allocated cases and their contacts on statewide databases in accordance with quick entry guides and statewide protocols
 
-Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Both initial notifications and reinvestigations signed out for follow-up were included. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+Numerator: Number of signed out case and contact events marked as completed by NEPHU during the reporting period
 
-***
+Denominator: Number of case and contact events signed out to NEPHU during the reporting period
+:::
+
+## Total number of notifications signed out during the reporting period
 
 ### All notifications
 
+Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
+
 ```{r}
 #
-cases_signedout <- cases_nephu %>%
-  dplyr::arrange(phess_id, date_signed_dh) %>%
-  #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
-  #
-  dplyr::group_by(reporting_group, short_name) %>% 
-  dplyr::summarise(signedout_n = n()) %>% 
-  dplyr::ungroup() %>% 
-  #
-  dplyr::arrange(reporting_group, short_name)
-
-cases_completed <- cases_nephu %>% 
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
+signed_nephu <- cases_nephu %>%
+  dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) %>% 
+  dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
   #
   dplyr::arrange(phess_id, date_signed_dh) %>%
   #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>%  
-  #
-  dplyr::group_by(reporting_group, short_name) %>% 
-  dplyr::summarise(completed_n = n()) %>% 
-  dplyr::ungroup() %>% 
-  #
-  dplyr::arrange(reporting_group, short_name)
-
-cases_signedout <- cases_signedout %>% 
-  dplyr::left_join(cases_completed, by = c("reporting_group", "short_name")) %>%
-  #
-  replace_na(list(completed_n = 0)) %>% 
-  #
-  janitor::adorn_totals() %>% 
-  #
-  dplyr::mutate(completed_percent = round(completed_n / signedout_n * 100, digits = 1)) %>% 
-  #
-  dplyr::select(reporting_group,
-                short_name,
-                completed_n,
-                signedout_n,
-                completed_percent)
-
-results_total <- cases_signedout %>% 
-  dplyr::filter(reporting_group == "Total")
+  dplyr::distinct(phess_id, .keep_all = TRUE)
 ```
 
 :::{.infobox}
-`r round(results_total$completed_percent, digits = 1)`% (`r format(results_total$completed_n, big.mark = ",")`/`r format(results_total$signedout_n, big.mark = ",")`) of all notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` were completed at the time of reporting.
+`r format(nrow(signed_nephu), big.mark = ",")` notifications were signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
 :::
 
 :::{style="height: 1em;"}
 :::
 
-**Total number of notifications signed out for follow-up and number and percentage of notifications with follow-up completed, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Total number of notifications signed out for follow-up, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
 #
-cases_signedout %>% 
+table_signed_nephu <- signed_nephu %>%
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(signedout_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name) %>% 
+  #
+  janitor::adorn_totals()
+
+table_signed_nephu %>% 
   knitr::kable(table.attr  = "style = \"color: black;\"",
                format.args = list(big.mark = ","),
-               align       = "llrrr",
+               align       = "llr",
                col.names   = c("Reporting group",
                                "Condition",
-                               "Completed (n)",
-                               "Signed out (n)",
-                               "Completed (%)")) %>% 
+                               "Signed out (n)")) %>% 
   #
   kableExtra::kable_styling(full_width = FALSE,
                             position   = "center",
                             html_font  = "Arial",
                             font_size  = 12) %>%
   #
-  kableExtra::column_spec(3:5,
-                          width = "1.5in") %>% 
+  kableExtra::column_spec(3,
+                          width = "1.25in") %>% 
   #
   kableExtra::row_spec(row  = 0,
                        bold = TRUE) %>% 
   #
-  kableExtra::row_spec(nrow(cases_signedout),
+  kableExtra::row_spec(nrow(table_signed_nephu),
                        bold      = TRUE,
                        extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>% 
   #
   kableExtra::scroll_box(height = "400px")
 ```
 
-***
+### Urgent notifications
 
-### All urgent notifications
+Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
 
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
 
-All urgent notifications (final event classification confirmed, probable, suspected, at risk, not notifiable, or rejected) were included.
-
 ```{r}
 #
-urgent_signedout <- urgent_nephu %>%
-  dplyr::arrange(phess_id, date_signed_dh) %>%
+signed_nephu <- cases_nephu %>%
+  dplyr::filter(condition %in% conditions_urgent) %>% 
   #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
-  #
-  dplyr::group_by(reporting_group, short_name) %>% 
-  dplyr::summarise(signedout_n = n()) %>% 
-  dplyr::ungroup() %>% 
-  #
-  dplyr::arrange(reporting_group, short_name)
-
-urgent_completed <- urgent_nephu %>%
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
+  dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) %>% 
+  dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
   #
   dplyr::arrange(phess_id, date_signed_dh) %>%
   #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
-  #
-  dplyr::group_by(reporting_group, short_name) %>% 
-  dplyr::summarise(completed_n = n()) %>% 
-  dplyr::ungroup() %>% 
-  #
-  dplyr::arrange(reporting_group, short_name)
-
-urgent_signedout <- urgent_signedout %>% 
-  dplyr::left_join(urgent_completed, by = c("reporting_group", "short_name")) %>%
-  #
-  replace_na(list(completed_n = 0)) %>% 
-  #
-  janitor::adorn_totals() %>% 
-  #
-  dplyr::mutate(completed_percent = round(completed_n / signedout_n * 100, digits = 1)) %>% 
-  #
-  dplyr::select(reporting_group,
-                short_name,
-                completed_n,
-                signedout_n,
-                completed_percent)
-
-results_total <- urgent_signedout %>% 
-  dplyr::filter(reporting_group == "Total")
+  dplyr::distinct(phess_id, .keep_all = TRUE)
 ```
 
 :::{.infobox}
-`r round(results_total$completed_percent, digits = 1)`% (`r format(results_total$completed_n, big.mark = ",")`/`r format(results_total$signedout_n, big.mark = ",")`) of all urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` were completed at the time of reporting.
+`r format(nrow(signed_nephu), big.mark = ",")` urgent notifications were signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
 :::
 
 :::{style="height: 1em;"}
 :::
 
-**Total number of urgent notifications signed out for follow-up and number and percentage of urgent notifications with follow-up completed, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Total number of urgent notifications signed out for follow-up, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
 #
-urgent_signedout %>% 
-  dplyr::mutate(completed_percent = sprintf("%.1f", completed_percent)) %>%
+table_signed_nephu <- signed_nephu %>%
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(signedout_n = n()) %>% 
+  dplyr::ungroup() %>% 
   #
+  dplyr::arrange(reporting_group, short_name) %>% 
+  #
+  janitor::adorn_totals()
+
+table_signed_nephu %>% 
   knitr::kable(table.attr  = "style = \"color: black;\"",
                format.args = list(big.mark = ","),
-               align       = "llrrr",
+               align       = "llr",
                col.names   = c("Reporting group",
                                "Condition",
-                               "Completed (n)",
-                               "Signed out (n)",
-                               "Completed (%)")) %>% 
+                               "Signed out (n)")) %>% 
   #
   kableExtra::kable_styling(full_width = FALSE,
                             position   = "center",
                             html_font  = "Arial",
                             font_size  = 12) %>%
   #
-  kableExtra::column_spec(3:5,
-                          width = "1.5in") %>% 
+  kableExtra::column_spec(3,
+                          width = "1.25in") %>% 
   #
   kableExtra::row_spec(row  = 0,
                        bold = TRUE) %>% 
   #
-  kableExtra::row_spec(nrow(urgent_signedout),
+  kableExtra::row_spec(nrow(table_signed_nephu),
                        bold      = TRUE,
                        extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
+***
+
+## Total number of notifications completed during the reporting period
+
+### All notifications
+
+Data were extracted from PHESS via PHAR for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
+
+```{r}
+#
+completed_nephu <- cases_nephu %>%
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::mutate(completed_quarter = dplyr::case_when(
+    investigation_completed_date >= quarter_start & investigation_completed_date <= quarter_end ~ "Yes",
+    reinvestigation_status_date >= quarter_start & reinvestigation_status_date <= quarter_end   ~ "Yes",
+    TRUE ~ "No")) %>% 
+  #
+  dplyr::filter(completed_quarter == "Yes") %>% 
+  #
+  # Q2 2026 only - exclude bulk closure of historical gono cases
+  dplyr::filter(!c(condition == "Gonococcal infection" & event_date < lubridate::ymd("2025-10-24") & investigation_completed_date == lubridate::ymd("2025-10-24"))) %>% 
+  #
+  dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
+  #
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE)
+```
+
+:::{.infobox}
+`r format(nrow(completed_nephu), big.mark = ",")` notifications had follow-up completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
+
+Additionally, NEPHU bulk closed 2,039 historical gonorrhoea notifications during this reporting period.
+:::
+
+:::{style="height: 1em;"}
+:::
+
+**Total number of notifications with follow-up completed between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU**
+
+```{r}
+#
+table_completed_nephu <- completed_nephu %>%
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name) %>% 
+  #
+  janitor::adorn_totals()
+
+table_completed_nephu %>% 
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Completed (n)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3,
+                          width = "1.25in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(table_completed_nephu),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>% 
+  #
+  kableExtra::scroll_box(height = "400px")
+```
+
+### Urgent notifications
+
+Data were extracted from PHESS via PHAR for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
+
+Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+```{r}
+#
+completed_nephu <- cases_nephu %>%
+  dplyr::filter(condition %in% conditions_urgent) %>% 
+  #
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::mutate(completed_quarter = dplyr::case_when(
+    investigation_completed_date >= quarter_start & investigation_completed_date <= quarter_end ~ "Yes",
+    reinvestigation_status_date >= quarter_start & reinvestigation_status_date <= quarter_end   ~ "Yes",
+    TRUE ~ "No")) %>% 
+  #
+  dplyr::filter(completed_quarter == "Yes") %>%
+  #
+  dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
+  #
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE)
+```
+
+:::{.infobox}
+`r format(nrow(completed_nephu), big.mark = ",")` urgent notifications had follow-up completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
+:::
+
+:::{style="height: 1em;"}
+:::
+
+**Total number of urgent notifications with follow-up completed between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU**
+
+```{r}
+#
+table_completed_nephu <- completed_nephu %>%
+  dplyr::group_by(reporting_group, short_name) %>% 
+  dplyr::summarise(completed_n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  dplyr::arrange(reporting_group, short_name) %>% 
+  #
+  janitor::adorn_totals()
+
+table_completed_nephu %>% 
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Completed (n)")) %>% 
+  #
+  kableExtra::kable_styling(full_width = FALSE,
+                            position   = "center",
+                            html_font  = "Arial",
+                            font_size  = 12) %>%
+  #
+  kableExtra::column_spec(3,
+                          width = "1.25in") %>% 
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(table_completed_nephu),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
+***
+
+## Urgent notifications with follow-up pending
+
+Data were extracted from PHESS via PHAR for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, and Suspected notifications were included.
+
+* Rejected, Not Notifiable, and At Risk notifications were excluded.
+
+Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+```{r}
+#
+urgent_pending <- cases_nephu %>%
+  dplyr::filter(condition %in% conditions_urgent) %>% 
+  #
+  dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) %>% 
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable", "Suspected")) %>%
+  dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
+  #
+  dplyr::arrange(short_name, event_date)
 ```
 
 
@@ -263,14 +432,9 @@ urgent_signedout %>%
 # Uncomment this code chunk as required
 ################################################################################
 # Create and export the linelist of urgent cases that need manual checking
-# 
-# urgent_pending <- urgent_nephu %>%
-#   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>%
-#   #
-#   dplyr::arrange(short_name, event_date) %>%
-#   #
-#   dplyr::mutate(event_date       = format(event_date, "%d/%m/%Y"),
-#                 date_signed_dh   = format(date_signed_dh, "%d/%m/%Y %H:%M")) %>%
+# urgent_pending <- urgent_pending %>%
+#   dplyr::mutate(event_date     = format(event_date, "%d/%m/%Y"),
+#                 date_signed_dh = format(date_signed_dh, "%d/%m/%Y")) %>%
 #   #
 #   dplyr::select(`PHESS ID` = phess_id,
 #                 `Event date` = event_date,
@@ -279,18 +443,20 @@ urgent_signedout %>%
 #                 `Signed out by DH` = date_signed_dh) %>%
 #   #
 #   dplyr::mutate(`Notes` = "")
-# 
+#  
 # writexl::write_xlsx(urgent_pending,
 #                     paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ```
 
-**Urgent notifications signed out with follow-up in progress, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Confirmed, probable, and suspected urgent notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` with follow-up in progress, NEPHU**
 
 ```{r}
 # Read in results of manual review
-urgent_pending <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
-                                   sheet     = 1,
-                                   guess_max = min(100000, Inf)) %>%
+urgent_pending <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", 
+                                           format(quarter_end, format = "%Y%m%d"), ".xlsx"),
+
+                                    sheet     = 1,
+                                    guess_max = min(100000, Inf)) %>%
   #
   janitor::clean_names()
 

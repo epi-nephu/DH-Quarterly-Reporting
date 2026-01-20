@@ -1,6 +1,6 @@
 # DH Quarterly Reporting
 # Author: Alana Little, NEPHU (alana.little@austin.org.au)
-# Version 2.1, 19/01/2026
+# Version 2.1, 12/01/2026
 
 # Data extraction from PHAR for DH Quarterly Reporting
 
@@ -8,29 +8,27 @@
 # Austin proxy shenanigans
 ################################################################################
 # Note: useProxy = 1 when in Austin offices, useProxy = 0 when WFH
-con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 1)
+con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 0)
 
 ################################################################################
 # Extract case and outbreak data from PHAR
 ################################################################################
-# Select all NEPHU notifications during reporting period
-# Exclude conditions not managed by LPHUs and FBWB illness
+# Select all NEPHU notifications since the start of integration
+# Exclude conditions not managed by LPHUs
 # Separate legionellosis into longbeachae vs. pneumophila/others
 phar_nephu <- DBI::dbGetQuery(con,
                               glue::glue("SELECT * FROM dh_public_health.phess_release.caseevents
-                                          WHERE EVENT_DATE >= DATE '{lookback_start}'
+                                          WHERE EVENT_DATE >= DATE '{integration_start}'
                                           AND EVENT_DATE <= DATE '{quarter_end}'
-                                          AND (LGA IN ({lga_name_sql})
-                                               OR ASSIGNED_LPHU = 'North Eastern')")) %>% 
+                                          AND (ASSIGNED_LPHU = 'North Eastern')")) %>% 
   janitor::clean_names() %>% 
   #
   dplyr::filter(event_type %in% c("Case", "Contact/exposed person")) %>%
   #
-  dplyr::filter(!condition %in% c("Food-borne or water-borne illness",
-                                  "Anaphylaxis",
+  dplyr::filter(!condition %in% c("Anaphylaxis",
                                   "Blood lead greater than 5 ug/dL",
-                                  "Tuberculosis",
-                                  "Non-notifiable")) %>% 
+                                  "Human biosecurity report",
+                                  "Tuberculosis")) %>% 
   #
   dplyr::mutate(condition = dplyr::case_when(
     organism_cause == "Legionella longbeachae" ~ "Legionella longbeachae",
@@ -97,24 +95,8 @@ phar_outbreaks <- DBI::dbGetQuery(con,
 DBI::dbDisconnect(con)
 
 ################################################################################
-# Wrangle outbreak data
+# Data wrangling - cases
 ################################################################################
-outbreaks_nephu <- phar_outbreaks %>% 
-  dplyr::mutate(event_date = lubridate::ymd(event_date)) %>% 
-  dplyr::filter(event_date >= quarter_start & event_date <= quarter_end)
-
-################################################################################
-# Wrangle case data
-################################################################################
-# Restrict to notifications signed out by DH during reporting period
-cases_nephu <- phar_nephu %>%
-  dplyr::left_join(phar_signouts, by = "phess_id") %>%
-  #
-  dplyr::mutate(date_signed_dh   = lubridate::date(datetime_signed_dh),
-                date_signed_lphu = lubridate::date(datetime_signed_lphu)) %>%
-  #
-  dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) 
-
 # Read in conditions reference list
 reference_conditions <- readxl::read_xlsx(paste0(here::here(), "/Data/ConditionsReferenceList", ".xlsx"),
                                           sheet     = 1,
@@ -128,46 +110,24 @@ reference_conditions <- readxl::read_xlsx(paste0(here::here(), "/Data/Conditions
   dplyr::distinct(condition, .keep_all = TRUE)
 
 # Join condition and risk factor information to case data
-cases_nephu <- cases_nephu %>% 
+cases_nephu <- phar_nephu %>% 
+  dplyr::left_join(phar_signouts, by = "phess_id") %>%
+  #
+  dplyr::mutate(event_date = lubridate::ymd(event_date),
+                #
+                date_signed_dh   = lubridate::date(datetime_signed_dh),
+                date_signed_lphu = lubridate::date(datetime_signed_lphu)) %>%
+  #
   dplyr::left_join(reference_conditions, by = "condition") %>% 
   dplyr::left_join(phar_risk, by = "phess_id") %>% 
   dplyr::left_join(phar_occupation, by = "phess_id")
 
 ################################################################################
-# Subset urgent notifications
+# Data wrangling - outbreaks
 ################################################################################
-urgent_nephu <- cases_nephu %>% 
-  dplyr::filter(condition %in% conditions_urgent)
-
-
-
-
-
-# Dedup - completion and Aboriginal status indicators - keep one row per case
-# Completion - investigation_completed_date or reinvestigation_status_date in reporting period
-cases_nephu %>% 
-  dplyr::arrange(phess_id, date_signed_dh) %>%
+# Outbreaks completed/closed during reporting period
+outbreaks_nephu <- phar_outbreaks %>% 
+  dplyr::mutate(investigation_completed_date = lubridate::ymd(investigation_completed_date)) %>% 
   #
-  dplyr::distinct(phess_id, .keep_all = TRUE)
-
-# Some more data wrangling - response within 24hr indicator - need to dedup and keep first signout
-cases_nephu <- cases_nephu %>% 
-  dplyr::mutate(datetime_signed_dh   = lubridate::ymd_hms(datetime_signed_dh),
-                datetime_signed_lphu = lubridate::ymd_hms(datetime_signed_lphu),
-                #
-                week_day = lubridate::wday(datetime_signed_dh, label = TRUE),
-                #
-                response_minutes = as.numeric(datetime_signed_lphu - datetime_signed_dh),
-                response_hours   = as.numeric(response_minutes / 60),
-                response_days    = as.numeric(response_hours / 24),
-                #
-                response_24hr = dplyr::case_when(
-                  week_day == "Fri" & response_hours <= 72 ~ "Within 24hr",
-                  week_day != "Fri" & response_hours <= 24 ~ "Within 24hr",
-                  TRUE ~ "More than 24hr")) %>% 
-  #
-  dplyr::arrange(condition,
-                 event_date)
-
-
+  dplyr::filter(investigation_completed_date >= quarter_start & investigation_completed_date <= quarter_end)
 

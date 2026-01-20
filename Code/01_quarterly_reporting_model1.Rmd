@@ -1,7 +1,7 @@
 ---
 title: 'DH Quarterly Reporting - Model 1 Incidents'
 author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
-version_details: "v2.0, 25/09/2025"
+version_details: "v2.1, 12/01/2026"
 output: 
   html_document: 
     code_folding: none
@@ -9,7 +9,7 @@ output:
     toc_depth: 3
     toc_float: true
 knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q1", " DH Quarterly Reporting", " Model 1 Incidents"), output_dir = "../Reports") })
+  rmarkdown::render(input, output_file = paste0("2026 Q2", " DH Quarterly Reporting", " Model 1 Incidents"), output_dir = "../Reports") })
 ---
 
 ```{css, echo = FALSE}
@@ -73,39 +73,61 @@ source(paste0(here::here(), "/Code", "/00_setup.R"))
 source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 ```
 
+:::{.infobox}
+**SQ1.6** Number of incidents (Model 1)
+
+For the purposes of reporting a Model 1 incident refers to a one or more of the below scenarios occurring within a single LPHU catchment that does not meet the definition of a Model 2 or Model 3 incident:  
+
+* A single case of a serious illness with major public health implications
+
+* Two or more linked cases of unexplained illness that may be caused by the same known or unknown agent (an outbreak)  
+
+* Higher than expected cases caused by or suspected to be caused by a serious pathogen
+
+* A high risk of exposure to a hazard by a population
+:::
+
 ## Total number of Model 1 Incidents
 
-Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+Data were extracted from PHESS via PHAR for all notifiable conditions (cases) and outbreaks completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
-Reporting for this indicator is limited to incidents that were closed/completed during the reporting period. 
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases, contact/exposed persons, and outbreaks were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
 
 Model 1 incidents were defined as:
 
-- Outbreaks of any pathogen
+* Outbreaks of any pathogen
 
-- Measles cases
+* Measles cases
 
-- Invasive meningococcal disease cases
+* Invasive meningococcal disease cases
 
-- Mpox cases
+* Mpox cases
 
-- Locally acquired typhoid, paratyphoid, or Hepatitis A cases
+* Locally acquired typhoid, paratyphoid, or Hepatitis A cases
 
-- Locally acquired legionellosis cases (excluding *L. longbeachae*)
+* Locally acquired legionellosis cases (excluding *L. longbeachae*)
 
-- Locally acquired JEV, MEV, dengue, malaria, or yellow fever cases
+* Locally acquired JEV, MEV, dengue, malaria, or yellow fever cases
 
-- Overseas acquired typhoid, paratyphoid, Hepatitis A, or shigellosis cases who work in a high-risk occupation
+* Overseas acquired typhoid, paratyphoid, Hepatitis A, or shigellosis cases who work in a high-risk occupation or attend childcare
 
-- Invasive GAS cases where PEP provision was required
+* Invasive GAS cases where PEP provision was required
 
-- Cases of high consequence pathogens (anthrax, avian influenza, botulism, cholera, diphtheria, HUS, lyssavirus, MERS, plague, polio, rabies, SARS, smallpox, tularemia, or viral haemorrhagic fevers)
+* Cases of high consequence pathogens (anthrax, avian influenza, botulism, cholera, diphtheria, HUS, lyssavirus, MERS, plague, polio, rabies, SARS, smallpox, tularemia, or viral haemorrhagic fevers)
 
 ```{r}
 # Closed outbreaks
-nephu_incident_outbreaks <- outbreaks_nephu %>% 
-  dplyr::filter(event_classification == "Confirmed") %>%
-  dplyr::filter(investigation_status == "Completed") %>% 
+nephu_incident_outbreaks <- outbreaks_nephu %>%
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
+  #
   dplyr::group_by(organism_cause) %>% 
   dplyr::summarise(n = n()) %>% 
   dplyr::ungroup() %>% 
@@ -119,11 +141,34 @@ outbreaks_total <- nephu_incident_outbreaks %>%
 
 
 ```{r}
-# Cases of specified urgent conditions
-nephu_urgent <- cases_nephu %>% 
-  dplyr::filter(condition %in% incident_urgent) %>% 
+# Confirmed and probable cases completed during reporting period
+completed_nephu <- cases_nephu %>%
   dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::mutate(completed_quarter = dplyr::case_when(
+    investigation_completed_date >= quarter_start & investigation_completed_date <= quarter_end ~ "Yes",
+    reinvestigation_status_date >= quarter_start & reinvestigation_status_date <= quarter_end   ~ "Yes",
+    TRUE ~ "No")) %>% 
+  #
+  dplyr::filter(completed_quarter == "Yes") %>% 
+  #
+  # Q2 2026 only - exclude bulk closure of historical gono cases
+  dplyr::filter(!c(condition == "Gonococcal infection" & event_date < lubridate::ymd("2025-10-24") & investigation_completed_date == lubridate::ymd("2025-10-24"))) %>% 
+  #
+  dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
+  #
+  dplyr::arrange(phess_id, date_signed_dh) %>%
+  #
+  dplyr::distinct(phess_id, .keep_all = TRUE)
+```
+
+
+```{r}
+# Cases of specified urgent conditions
+nephu_urgent <- completed_nephu %>% 
+  dplyr::filter(condition %in% incident_urgent) %>% 
   #
   dplyr::group_by(short_name) %>% 
   dplyr::summarise(n = n()) %>% 
@@ -133,10 +178,8 @@ nephu_urgent <- cases_nephu %>%
 
 ```{r}
 # Locally acquired specified urgent conditions
-nephu_local <- cases_nephu %>% 
+nephu_local <- completed_nephu %>% 
   dplyr::filter(condition %in% incident_local) %>% 
-  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
   dplyr::filter(is.na(travel_overseas)) %>% 
   #
   dplyr::group_by(short_name) %>% 
@@ -147,10 +190,8 @@ nephu_local <- cases_nephu %>%
 
 ```{r}
 # Cases of specified high consequence conditions
-nephu_rare <- cases_nephu %>% 
+nephu_rare <- completed_nephu %>% 
   dplyr::filter(condition %in% incident_rare) %>% 
-  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
   #
   dplyr::group_by(short_name) %>% 
   dplyr::summarise(n = n()) %>% 
@@ -159,13 +200,11 @@ nephu_rare <- cases_nephu %>%
 
 
 ```{r}
-# Overseas acquired specified enteric cases who work in high-risk occupation
-nephu_highrisk <- cases_nephu %>% 
+# Overseas acquired specified enteric cases who work in high-risk occupation or attend childcare
+nephu_highrisk <- completed_nephu %>% 
   dplyr::filter(condition %in% incident_highrisk) %>% 
-  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
   dplyr::filter(travel_overseas == "Yes") %>%
-  dplyr::filter(work_status == "Employed")
+  dplyr::filter(work_status %in% c("Employed", "Child in child/day care"))
 
 ################################################################################
 # Uncomment this section as required
@@ -181,10 +220,11 @@ nephu_highrisk <- cases_nephu %>%
 #                 `Event date` = event_date,
 #                 `Condition` = short_name,
 #                 `Final event classification` = event_classification,
+#                 `Work status` = work_status,
 #                 `Occupation` = occupation) %>%
 #   #
 #   dplyr::mutate(`High risk` = "")
-#  
+# 
 # writexl::write_xlsx(nephu_highrisk,
 #                     paste0(here::here(), "/Data", "/ManualReview_", "HighRisk_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ################################################################################
@@ -208,10 +248,8 @@ nephu_highrisk <- nephu_highrisk %>%
 
 ```{r}
 # Invasive GAS where PEP provision was required
-nephu_pep <- cases_nephu %>% 
-  dplyr::filter(condition == "Invasive Group A Streptococcus") %>% 
-  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed"))
+nephu_pep <- completed_nephu %>% 
+  dplyr::filter(condition == "Invasive Group A Streptococcus")
 
 ################################################################################
 # Uncomment this section as required
@@ -275,7 +313,7 @@ There were `r cases_total + outbreaks_total` Model 1 incidents (`r outbreaks_tot
 :::{style="height: 1em;"}
 :::
 
-**Closed outbreaks notified between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU, by causative organism**
+**Outbreaks closed between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU, by causative organism**
 
 ```{r}
 #

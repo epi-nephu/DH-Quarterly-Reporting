@@ -1,7 +1,7 @@
 ---
 title: 'DH Quarterly Reporting - Indigenous Status Completion'
 author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
-version_details: "v2.1, 19/01/2026"
+version_details: "v2.1, 12/01/2026"
 output: 
   html_document: 
     code_folding: none
@@ -73,40 +73,64 @@ source(paste0(here::here(), "/Code", "/00_setup.R"))
 source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 ```
 
-## Total number of completed notifications with Indigenous status recorded
+:::{.infobox}
+**SQ2.3** Proportion of notifiable condition events allocated to LPHUs that have reporting for Aboriginal and/or Torres Strait Islander status completed
 
-Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. Notifications were excluded when the final case classification was Rejected or Not Notifiable as these notifications did not undergo full case interview or follow-up. Both initial notifications and reinvestigations signed out for follow-up were included. Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, tuberculosis) and cases of food-borne or water-borne illness were excluded.
+Numerator: Number of case and contact events marked as completed by NEPHU during the reporting period with Aboriginal and/or Torres Strait Islander status recorded
+
+Denominator: Number of case and contact events marked as completed by NEPHU during the reporting period
+:::
+
+## All notifications signed out during the reporting period
+
+Data were extracted from PHESS via PHAR for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
 
 Indigenous status was classified as recorded when the Indigenous status field in PHESS was any other option than "Missing/Not Stated". The "Missing/Not Stated" option includes situations where Indigenous status has been left blank on the ESF and/or the Indigenous status question was not asked during case interview (Missing) and situations where Indigenous status has been filled out on the ESF and/or asked during the case interview but the respondent has refused to answer the question, was lost to follow-up, or was unsure of their status (Not Stated). There is currently no way to separate out these options in PHESS.
 
-***
-
-### All notifications
-
 ```{r}
-#
-indigenous_completed <- cases_nephu %>%
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
-  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
+# Select notifications with follow-up completed during reporting period
+completed_nephu <- cases_nephu %>%
+  dplyr::filter(!is.na(date_signed_dh)) %>% 
+  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>% 
+  #
+  dplyr::mutate(completed_quarter = dplyr::case_when(
+    investigation_completed_date >= quarter_start & investigation_completed_date <= quarter_end ~ "Yes",
+    reinvestigation_status_date >= quarter_start & reinvestigation_status_date <= quarter_end   ~ "Yes",
+    TRUE ~ "No")) %>% 
+  #
+  dplyr::filter(completed_quarter == "Yes") %>% 
+  #
+  # Q2 2026 only - exclude bulk closure of historical gono cases
+  dplyr::filter(!c(condition == "Gonococcal infection" & event_date < lubridate::ymd("2025-10-24") & investigation_completed_date == lubridate::ymd("2025-10-24"))) %>% 
+  #
+  dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
   #
   dplyr::arrange(phess_id, date_signed_dh) %>%
   #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>%
-  #
+  dplyr::distinct(phess_id, .keep_all = TRUE)
+```
+
+
+```{r}
+#
+indigenous_completed <- completed_nephu %>%
   dplyr::group_by(reporting_group, short_name) %>% 
   dplyr::summarise(completed_n = n()) %>% 
   dplyr::ungroup() %>% 
   #
   dplyr::arrange(reporting_group, short_name)
 
-indigenous_recorded <- cases_nephu %>%
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
-  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
-  #
-  dplyr::arrange(phess_id, date_signed_dh) %>%
-  #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>%
-  #
+indigenous_recorded <- completed_nephu %>%
   dplyr::filter(indigenous_status != "Missing/Not Stated") %>% 
   #
   dplyr::group_by(reporting_group, short_name) %>% 
@@ -130,18 +154,18 @@ indigenous_completed <- indigenous_completed %>%
                 completed_n,
                 recorded_percent)
 
-results_total <- indigenous_completed %>% 
+indigenous_total <- indigenous_completed %>% 
   dplyr::filter(reporting_group == "Total")
 ```
 
 :::{.infobox}
-`r round(results_total$recorded_percent, digits = 1)`% (`r format(results_total$recorded_n, big.mark = ",")`/`r format(results_total$completed_n, big.mark = ",")`) of all completed notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
+`r round(indigenous_total$recorded_percent, digits = 1)`% (`r format(indigenous_total$recorded_n, big.mark = ",")`/`r format(indigenous_total$completed_n, big.mark = ",")`) of notifications completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
 :::
 
 :::{style="height: 1em;"}
 :::
 
-**Number and percentage of notifications with Indigenous status recorded, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Number and percentage of completed notifications between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` with Indigenous status recorded, NEPHU**
 
 ```{r}
 #
@@ -179,17 +203,26 @@ indigenous_completed %>%
 
 ### Urgent notifications
 
+Data were extracted from PHESS via PHAR for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
+
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+Indigenous status was classified as recorded when the Indigenous status field in PHESS was any other option than "Missing/Not Stated". The "Missing/Not Stated" option includes situations where Indigenous status has been left blank on the ESF and/or the Indigenous status question was not asked during case interview (Missing) and situations where Indigenous status has been filled out on the ESF and/or asked during the case interview but the respondent has refused to answer the question, was lost to follow-up, or was unsure of their status (Not Stated). There is currently no way to separate out these options in PHESS.
 
 ```{r}
 #
-indigenous_completed <- urgent_nephu %>%
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
-  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
-  #
-  dplyr::arrange(phess_id, date_signed_dh) %>%
-  #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>%
+indigenous_completed <- completed_nephu %>%
+  dplyr::filter(condition %in% conditions_urgent) %>% 
   #
   dplyr::group_by(reporting_group, short_name) %>% 
   dplyr::summarise(completed_n = n()) %>% 
@@ -197,13 +230,9 @@ indigenous_completed <- urgent_nephu %>%
   #
   dplyr::arrange(reporting_group, short_name)
 
-indigenous_recorded <- urgent_nephu %>%
-  dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>%
-  dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
+indigenous_recorded <- completed_nephu %>%
+  dplyr::filter(condition %in% conditions_urgent) %>%
   #
-  dplyr::arrange(phess_id, date_signed_dh) %>%
-  #
-  dplyr::distinct(phess_id, .keep_all = TRUE) %>%
   dplyr::filter(indigenous_status != "Missing/Not Stated") %>% 
   #
   dplyr::group_by(reporting_group, short_name) %>% 
@@ -227,20 +256,21 @@ indigenous_completed <- indigenous_completed %>%
                 completed_n,
                 recorded_percent)
 
-results_total <- indigenous_completed %>% 
+indigenous_total <- indigenous_completed %>% 
   dplyr::filter(reporting_group == "Total")
 ```
 
 :::{.infobox}
-`r sprintf("%.1f", results_total$recorded_percent)`% (`r format(results_total$recorded_n, big.mark = ",")`/`r format(results_total$completed_n, big.mark = ",")`) of all completed urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
+`r round(indigenous_total$recorded_percent, digits = 1)`% (`r format(indigenous_total$recorded_n, big.mark = ",")`/`r format(indigenous_total$completed_n, big.mark = ",")`) of urgent notifications completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
 :::
 
 :::{style="height: 1em;"}
 :::
 
-**Number and percentage of urgent notifications with Indigenous status completed, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+**Number and percentage of completed urgent notifications between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` with Indigenous status recorded, NEPHU**
 
 ```{r}
+#
 indigenous_completed %>% 
   dplyr::mutate(recorded_percent = sprintf("%.1f", recorded_percent)) %>%
   #
@@ -269,6 +299,23 @@ indigenous_completed %>%
                        extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
 ```
 
+***
+
+## Urgent notifications with Indigenous status missing
+
+Data were extracted from PHESS via PHAR for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, and Suspected notifications were included.
+
+* Rejected, Not Notifiable, and At Risk notifications were excluded.
+
+Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+Indigenous status was classified as recorded when the Indigenous status field in PHESS was any other option than "Missing/Not Stated". The "Missing/Not Stated" option includes situations where Indigenous status has been left blank on the ESF and/or the Indigenous status question was not asked during case interview (Missing) and situations where Indigenous status has been filled out on the ESF and/or asked during the case interview but the respondent has refused to answer the question, was lost to follow-up, or was unsure of their status (Not Stated). There is currently no way to separate out these options in PHESS.
 
 ```{r}
 ################################################################################ 
@@ -276,13 +323,16 @@ indigenous_completed %>%
 ################################################################################
 # Create and export the linelist of urgent cases that need manual checking
 # 
-# indigenous_missing <- urgent_nephu %>%
-#   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>%
+# indigenous_missing <- completed_nephu %>%
+#   dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+#   dplyr::filter(condition %in% conditions_urgent) %>%
+#   dplyr::filter(event_classification != "At risk") %>%
+#   dplyr::filter(indigenous_status == "Missing/Not Stated") %>%
 #   #
 #   dplyr::arrange(short_name, event_date) %>%
 #   #
-#   dplyr::mutate(event_date       = format(event_date, "%d/%m/%Y"),
-#                 date_signed_dh   = format(date_signed_dh, "%d/%m/%Y %H:%M")) %>%
+#   dplyr::mutate(event_date     = format(event_date, "%d/%m/%Y"),
+#                 date_signed_dh = format(date_signed_dh, "%d/%m/%Y")) %>%
 #   #
 #   dplyr::select(`PHESS ID` = phess_id,
 #                 `Event date` = event_date,
@@ -292,59 +342,13 @@ indigenous_completed %>%
 #   #
 #   dplyr::mutate(`Notes` = "")
 # 
-# writexl::write_xlsx(urgent_pending,
-#                     paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+# writexl::write_xlsx(indigenous_missing,
+#                     paste0(here::here(), "/Data", "/ManualReview_", "IndigenousPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ```
 
-
-```{r}
-################################################################################
-# Uncomment this code chunk as required
-################################################################################
-# Add chart title to narrative as required:
-#
-# <br/>
-#
-# **Completed urgent notifications with Indigenous status not recorded, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
-# 
-# indigenous_missing <- urgent_nephu %>%
-#   dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>% 
-#   dplyr::filter(!event_classification %in% c("Rejected", "Not notifiable")) %>% 
-#   dplyr::filter(indigenous_status == "Missing/Not Stated") %>% 
-#   #
-#   dplyr::arrange(short_name, event_date) %>% 
-#   #
-#   dplyr::select(phess_id,
-#                 short_name,
-#                 event_classification,
-#                 event_date,
-#                 date_signed_dh)
-# 
-# indigenous_missing %>% 
-#   knitr::kable(table.attr  = "style = \"color: black;\"",
-#                format.args = list(big.mark = ","),
-#                align       = "lllcc",
-#                col.names   = c("PHESS ID",
-#                                "Condition",
-#                                "Classification",
-#                                "Notification date",
-#                                "Sign-out date")) %>% 
-#   #
-#   kableExtra::kable_styling(full_width = FALSE,
-#                             position   = "center",
-#                             html_font  = "Arial",
-#                             font_size  = 12) %>%
-#   #
-#   kableExtra::column_spec(4:5,
-#                           width = "1.5in") %>% 
-#   #
-#   kableExtra::row_spec(row  = 0,
-#                        bold = TRUE) %>% 
-#   #
-#   kableExtra::row_spec(nrow(urgent_pending),
-#                        extra_css = "border-bottom: 2px solid lightgray;")
-```
-
+:::{.infobox}
+There were no confirmed, probable, and suspected urgent notifications completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` where Indigenous status was not recorded (i.e. recorded as "Missing/Not Stated" or left blank).
+:::
 
 <br/>
 
