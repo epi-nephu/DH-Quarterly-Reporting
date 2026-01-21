@@ -47,7 +47,9 @@ body {
 }
 
 .infobox {
-  padding: 10px;
+  padding-top: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   background: white;
   color: black;
   border: 2px solid #5BC788;
@@ -73,8 +75,13 @@ source(paste0(here::here(), "/Code", "/00_setup.R"))
 source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 ```
 
+:::{style="height: 1em;"}
+:::
+
 :::{.infobox}
-**SQ1.2** Proportion of public health responses initiated for urgent notifications within 24 hours
+**Indicator SQ1.2**
+
+**Proportion of public health responses initiated for urgent notifications within 24 hours**
 
 Numerator: Number of urgent case and contact events signed out to NEPHU during the reporting period with public health actions initiated within 24hr of sign-out
 
@@ -83,7 +90,7 @@ Denominator: Number of urgent case and contact events signed out to NEPHU during
 
 ## Percentage of urgent conditions responded to within 24 hours
 
-Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
 * Both initial notifications and reinvestigations signed out for follow-up were included.
 
@@ -99,7 +106,8 @@ Urgent notifiable conditions include the following: anthrax, botulism, *Candida 
 
 The time between the first sign-out by the Department of Health and the first acknowledgment by NEPHU staff was calculated as a proxy measure of whether public health actions had commenced. Notifications where the time between sign-out and acknowledgement was greater than 24 hours (1,440 minutes) were manually reviewed in PHESS to check whether public health actions had commenced within 24 hours of the initial laboratory or doctor notification.
 
-***
+:::{style="height: 1em;"}
+:::
 
 ### Before manual review
 
@@ -228,8 +236,6 @@ results_24hr %>%
 #                     paste0(here::here(), "/Data", "/ManualReview_", "24hr_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ```
 
-***
-
 ### After manual review
 
 ```{r}
@@ -313,6 +319,9 @@ results_24hr %>%
   kableExtra::add_header_above(c(" " = 1,
                                  "Time between DH signout and initial LPHU response" = 3))
 ```
+
+:::{style="height: 1em;"}
+:::
 
 **Urgent notifiable conditions with time between DH signout and initial LPHU response >24 hours, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 

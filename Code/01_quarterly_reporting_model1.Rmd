@@ -47,7 +47,9 @@ body {
 }
 
 .infobox {
-  padding: 10px;
+  padding-top: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   background: white;
   color: black;
   border: 2px solid #5BC788;
@@ -73,8 +75,13 @@ source(paste0(here::here(), "/Code", "/00_setup.R"))
 source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 ```
 
+:::{style="height: 1em;"}
+:::
+
 :::{.infobox}
-**SQ1.6** Number of incidents (Model 1)
+**Indicator SQ1.6** 
+
+**Number of incidents (Model 1)**
 
 For the purposes of reporting a Model 1 incident refers to a one or more of the below scenarios occurring within a single LPHU catchment that does not meet the definition of a Model 2 or Model 3 incident:  
 
@@ -89,7 +96,7 @@ For the purposes of reporting a Model 1 incident refers to a one or more of the 
 
 ## Total number of Model 1 Incidents
 
-Data were extracted from PHESS via PHAR for all notifiable conditions (cases) and outbreaks completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all notifiable conditions (cases) and outbreaks completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
 * Both initial notifications and reinvestigations signed out for follow-up were included.
 
@@ -122,6 +129,9 @@ Model 1 incidents were defined as:
 * Invasive GAS cases where PEP provision was required
 
 * Cases of high consequence pathogens (anthrax, avian influenza, botulism, cholera, diphtheria, HUS, lyssavirus, MERS, plague, polio, rabies, SARS, smallpox, tularemia, or viral haemorrhagic fevers)
+
+:::{style="height: 1em;"}
+:::
 
 ```{r}
 # Closed outbreaks
@@ -304,8 +314,6 @@ cases_total <- nephu_incident_cases %>%
   pull(n)
 ```
 
-***
-
 :::{.infobox}
 There were `r cases_total + outbreaks_total` Model 1 incidents (`r outbreaks_total` outbreaks and `r cases_total` cases) closed/completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 :::
@@ -336,7 +344,8 @@ nephu_incident_outbreaks %>%
                        extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
 ```
 
-***
+:::{style="height: 1em;"}
+:::
 
 **Model 1 incident cases completed between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU, by condition**
 

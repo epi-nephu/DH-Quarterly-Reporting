@@ -47,7 +47,9 @@ body {
 }
 
 .infobox {
-  padding: 10px;
+  padding-top: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   background: white;
   color: black;
   border: 2px solid #5BC788;
@@ -73,8 +75,13 @@ source(paste0(here::here(), "/Code", "/00_setup.R"))
 source(paste0(here::here(), "/Code", "/00_data_extract.R"))
 ```
 
+:::{style="height: 1em;"}
+:::
+
 :::{.infobox}
-**SQ1.5** Percentage of case follow-up marked as completed for allocated cases and their contacts on statewide databases in accordance with quick entry guides and statewide protocols
+**Indicator SQ1.5**
+
+**Percentage of case follow-up marked as completed for allocated cases and their contacts on statewide databases in accordance with quick entry guides and statewide protocols**
 
 Numerator: Number of signed out case and contact events marked as completed by NEPHU during the reporting period
 
@@ -85,7 +92,7 @@ Denominator: Number of case and contact events signed out to NEPHU during the re
 
 ### All notifications
 
-Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
 * Both initial notifications and reinvestigations signed out for follow-up were included.
 
@@ -96,6 +103,9 @@ Data were extracted from PHESS via PHAR for all notifiable conditions signed out
 * Rejected and Not Notifiable notifications were excluded.
 
 * Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
+
+:::{style="height: 1em;"}
+:::
 
 ```{r}
 #
@@ -156,7 +166,7 @@ table_signed_nephu %>%
 
 ### Urgent notifications
 
-Data were extracted from PHESS via PHAR for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
 * Both initial notifications and reinvestigations signed out for follow-up were included.
 
@@ -169,6 +179,9 @@ Data were extracted from PHESS via PHAR for all notifiable conditions signed out
 * Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
 
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
+
+:::{style="height: 1em;"}
+:::
 
 ```{r}
 #
@@ -233,7 +246,7 @@ table_signed_nephu %>%
 
 ### All notifications
 
-Data were extracted from PHESS via PHAR for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
 * Both initial notifications and reinvestigations signed out for follow-up were included.
 
@@ -245,9 +258,13 @@ Data were extracted from PHESS via PHAR for all notifiable conditions completed 
 
 * Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
 
+:::{style="height: 1em;"}
+:::
+
 ```{r}
 #
 completed_nephu <- cases_nephu %>%
+  dplyr::filter(!is.na(date_signed_dh)) %>% 
   dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>% 
   #
   dplyr::mutate(completed_quarter = dplyr::case_when(
@@ -317,7 +334,7 @@ table_completed_nephu %>%
 
 ### Urgent notifications
 
-Data were extracted from PHESS via PHAR for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all notifiable conditions completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
 
 * Both initial notifications and reinvestigations signed out for follow-up were included.
 
@@ -331,9 +348,13 @@ Data were extracted from PHESS via PHAR for all notifiable conditions completed 
 
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
 
+:::{style="height: 1em;"}
+:::
+
 ```{r}
 #
 completed_nephu <- cases_nephu %>%
+  dplyr::filter(!is.na(date_signed_dh)) %>% 
   dplyr::filter(condition %in% conditions_urgent) %>% 
   #
   dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>% 
@@ -400,7 +421,7 @@ table_completed_nephu %>%
 
 ## Urgent notifications with follow-up pending
 
-Data were extracted from PHESS via PHAR for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
 * Both initial notifications and reinvestigations signed out for follow-up were included.
 
@@ -412,13 +433,17 @@ Data were extracted from PHESS via PHAR for all urgent notifiable conditions sig
 
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
 
+:::{style="height: 1em;"}
+:::
+
 ```{r}
 #
 urgent_pending <- cases_nephu %>%
+  dplyr::filter(!is.na(date_signed_dh)) %>% 
   dplyr::filter(condition %in% conditions_urgent) %>% 
   #
   dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) %>% 
-  dplyr::filter(event_classification %in% c("Confirmed", "Probable", "Suspected")) %>%
+  #dplyr::filter(event_classification %in% c("Confirmed", "Probable", "Suspected")) %>%
   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>% 
   #
   dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
@@ -443,7 +468,7 @@ urgent_pending <- cases_nephu %>%
 #                 `Signed out by DH` = date_signed_dh) %>%
 #   #
 #   dplyr::mutate(`Notes` = "")
-#  
+# 
 # writexl::write_xlsx(urgent_pending,
 #                     paste0(here::here(), "/Data", "/ManualReview_", "UrgentPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ```
@@ -483,7 +508,9 @@ urgent_pending %>%
                        bold = TRUE) %>%
   #
   kableExtra::row_spec(nrow(urgent_pending),
-                       extra_css = "border-bottom: 2px solid lightgray;")
+                       extra_css = "border-bottom: 2px solid lightgray;") %>% 
+  #
+  kableExtra::scroll_box(height = "400px")
 ```
 
 <br/>
