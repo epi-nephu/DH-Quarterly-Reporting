@@ -27,8 +27,8 @@ pacman::p_load(tidyverse,
 ################################################################################
 integration_start <- lubridate::ymd("2022-06-30")
 
-quarter_start  <- lubridate::ymd("2025-10-01")
-quarter_end    <- lubridate::ymd("2025-12-31")
+quarter_start  <- lubridate::ymd("2026-01-01")
+quarter_end    <- lubridate::ymd("2026-03-31")
 
 ################################################################################
 # Define constants

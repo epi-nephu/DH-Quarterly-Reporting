@@ -9,7 +9,7 @@ output:
     toc_depth: 3
     toc_float: true
 knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q2", " DH Quarterly Reporting", " Completed Notifications"), output_dir = "../Reports") })
+  rmarkdown::render(input, output_file = paste0("2026 Q3", " DH Quarterly Reporting", " Completed Notifications"), output_dir = "../Reports") })
 ---
 
 ```{css, echo = FALSE}
@@ -112,6 +112,7 @@ Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m
 signed_nephu <- cases_nephu %>%
   dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) %>% 
   dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
+  dplyr::filter(lga %in% nephu_lgas) %>% 
   #
   dplyr::arrange(phess_id, date_signed_dh) %>%
   #
@@ -286,8 +287,6 @@ completed_nephu <- cases_nephu %>%
 
 :::{.infobox}
 `r format(nrow(completed_nephu), big.mark = ",")` notifications had follow-up completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
-
-Additionally, NEPHU bulk closed 2,039 historical gonorrhoea notifications during this reporting period.
 :::
 
 :::{style="height: 1em;"}
@@ -443,7 +442,7 @@ urgent_pending <- cases_nephu %>%
   dplyr::filter(condition %in% conditions_urgent) %>% 
   #
   dplyr::filter(date_signed_dh >= quarter_start & date_signed_dh <= quarter_end) %>% 
-  #dplyr::filter(event_classification %in% c("Confirmed", "Probable", "Suspected")) %>%
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable", "Suspected")) %>%
   dplyr::filter(!investigation_status %in% c("Completed", "Reviewed")) %>% 
   #
   dplyr::distinct(phess_id, .keep_all = TRUE) %>% 

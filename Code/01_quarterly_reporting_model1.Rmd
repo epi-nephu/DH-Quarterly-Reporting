@@ -9,7 +9,7 @@ output:
     toc_depth: 3
     toc_float: true
 knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q2", " DH Quarterly Reporting", " Model 1 Incidents"), output_dir = "../Reports") })
+  rmarkdown::render(input, output_file = paste0("2026 Q3", " DH Quarterly Reporting", " Model 1 Incidents"), output_dir = "../Reports") })
 ---
 
 ```{css, echo = FALSE}
@@ -164,9 +164,6 @@ completed_nephu <- cases_nephu %>%
   #
   dplyr::filter(completed_quarter == "Yes") %>% 
   #
-  # Q2 2026 only - exclude bulk closure of historical gono cases
-  dplyr::filter(!c(condition == "Gonococcal infection" & event_date < lubridate::ymd("2025-10-24") & investigation_completed_date == lubridate::ymd("2025-10-24"))) %>% 
-  #
   dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
   #
   dplyr::arrange(phess_id, date_signed_dh) %>%
@@ -283,7 +280,7 @@ nephu_pep <- completed_nephu %>%
 ################################################################################
 # Read in results of manual review
 nephu_pep <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "PEP_", format(quarter_end, format = "%Y%m%d"), ".xlsx"),
-                                   sheet     = 1,
+                               sheet     = 1,
                                    guess_max = min(100000, Inf)) %>%
   #
   janitor::clean_names()

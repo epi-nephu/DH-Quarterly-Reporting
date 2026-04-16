@@ -8,7 +8,7 @@
 # Austin proxy shenanigans
 ################################################################################
 # Note: useProxy = 1 when in Austin offices, useProxy = 0 when WFH
-con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 0)
+con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 1)
 
 ################################################################################
 # Extract case and outbreak data from PHAR

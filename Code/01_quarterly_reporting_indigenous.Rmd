@@ -9,7 +9,7 @@ output:
     toc_depth: 3
     toc_float: true
 knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q2", " DH Quarterly Reporting", " Indigenous Status"), output_dir = "../Reports") })
+  rmarkdown::render(input, output_file = paste0("2026 Q3", " DH Quarterly Reporting", " Indigenous Status"), output_dir = "../Reports") })
 ---
 
 ```{css, echo = FALSE}
@@ -108,7 +108,7 @@ Indigenous status was classified as recorded when the Indigenous status field in
 :::
 
 ```{r}
-# Select notifications with follow-up completed during reporting period
+# Select notifications signed out to NEPHU and with follow-up completed during reporting period
 completed_nephu <- cases_nephu %>%
   dplyr::filter(!is.na(date_signed_dh)) %>% 
   dplyr::filter(investigation_status %in% c("Completed", "Reviewed") | reinvestigation_status %in% c("Completed", "Reviewed")) %>% 
@@ -118,10 +118,7 @@ completed_nephu <- cases_nephu %>%
     reinvestigation_status_date >= quarter_start & reinvestigation_status_date <= quarter_end   ~ "Yes",
     TRUE ~ "No")) %>% 
   #
-  dplyr::filter(completed_quarter == "Yes") %>% 
-  #
-  # Q2 2026 only - exclude bulk closure of historical gono cases
-  dplyr::filter(!c(condition == "Gonococcal infection" & event_date < lubridate::ymd("2025-10-24") & investigation_completed_date == lubridate::ymd("2025-10-24"))) %>% 
+  dplyr::filter(completed_quarter == "Yes") %>%
   #
   dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
   #
