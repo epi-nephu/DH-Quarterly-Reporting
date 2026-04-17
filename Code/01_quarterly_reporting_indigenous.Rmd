@@ -167,6 +167,8 @@ indigenous_total <- indigenous_completed %>%
 
 :::{.infobox}
 `r round(indigenous_total$recorded_percent, digits = 1)`% (`r format(indigenous_total$recorded_n, big.mark = ",")`/`r format(indigenous_total$completed_n, big.mark = ",")`) of notifications completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
+
+If gonorrhoea notifications are excluded, 92.8% (576/621) of notifications completed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had Indigenous status recorded (i.e. not recorded as "Missing/Not Stated") at the time of reporting.
 :::
 
 :::{style="height: 1em;"}
@@ -204,6 +206,94 @@ indigenous_completed %>%
                        extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>% 
   #
   kableExtra::scroll_box(height = "400px")
+```
+
+### Completed routine notifications with Indigenous status missing
+
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all routine notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Both initial notifications and reinvestigations signed out for follow-up were included.
+
+* Cases and contact/exposed persons were included.
+
+* Confirmed, Probable, Suspected, and At Risk notifications were included.
+
+* Rejected and Not Notifiable notifications were excluded.
+
+Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever. Routine notifiable conditions include all other notifiable conditions. 
+
+Indigenous status was classified as recorded when the Indigenous status field in PHESS was any other option than "Missing/Not Stated". The "Missing/Not Stated" option includes situations where Indigenous status has been left blank on the ESF and/or the Indigenous status question was not asked during case interview (Missing) and situations where Indigenous status has been filled out on the ESF and/or asked during the case interview but the respondent has refused to answer the question, was lost to follow-up, or was unsure of their status (Not Stated). There is currently no way to separate out these options in PHESS.
+
+:::{style="height: 1em;"}
+:::
+
+```{r}
+################################################################################ 
+# Uncomment this code chunk as required
+################################################################################
+# Create and export the linelist of routine cases that need manual checking
+# 
+# indigenous_missing <- completed_nephu %>%
+#   dplyr::filter(investigation_status %in% c("Completed", "Reviewed")) %>%
+#   dplyr::filter(indigenous_status == "Missing/Not Stated") %>%
+#   dplyr::filter(!condition %in% conditions_urgent) %>%
+#   #
+#   dplyr::arrange(short_name, event_date) %>%
+#   #
+#   dplyr::mutate(event_date     = format(event_date, "%d/%m/%Y"),
+#                 date_signed_dh = format(date_signed_dh, "%d/%m/%Y")) %>%
+#   #
+#   dplyr::select(`PHESS ID` = phess_id,
+#                 `Event date` = event_date,
+#                 `Condition` = short_name,
+#                 `Final event classification` = event_classification,
+#                 `Signed out by DH` = date_signed_dh) %>%
+#   #
+#   dplyr::mutate(`Notes` = "")
+# 
+# writexl::write_xlsx(indigenous_missing,
+#                     paste0(here::here(), "/Data", "/ManualReview_", "IndigenousPendingRoutine_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+```
+
+
+```{r}
+# Uncomment and add title/include table if required
+
+# **Routine notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` with Indigenous status missing, NEPHU**
+
+# Read in results of manual review
+# indigenous_missing <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "IndigenousPendingRoutine_", 
+#                                                format(quarter_end, format = "%Y%m%d"), ".xlsx"),
+# 
+#                                         sheet     = 1,
+#                                         guess_max = min(100000, Inf)) %>%
+#   #
+#   janitor::clean_names()
+# 
+# indigenous_missing %>%
+#   knitr::kable(table.attr  = "style = \"color: black;\"",
+#                format.args = list(big.mark = ","),
+#                align       = "lcllcl",
+#                col.names   = c("PHESS ID",
+#                                "Notification date",
+#                                "Condition",
+#                                "Classification",
+#                                "Sign-out date",
+#                                "Notes")) %>%
+#   #
+#   kableExtra::kable_styling(full_width = FALSE,
+#                             position   = "center",
+#                             html_font  = "Arial",
+#                             font_size  = 12) %>%
+#   #
+#   kableExtra::column_spec(c(2, 5),
+#                           width = "1.5in") %>%
+#   #
+#   kableExtra::row_spec(row  = 0,
+#                        bold = TRUE) %>%
+#   #
+#   kableExtra::row_spec(nrow(indigenous_missing),
+#                        extra_css = "border-bottom: 2px solid lightgray;")
 ```
 
 ***
@@ -311,7 +401,7 @@ indigenous_completed %>%
 
 ***
 
-## Completed urgent notifications with Indigenous status missing
+### Completed urgent notifications with Indigenous status missing
 
 Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all urgent notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
@@ -355,14 +445,14 @@ Indigenous status was classified as recorded when the Indigenous status field in
 #   dplyr::mutate(`Notes` = "")
 # 
 # writexl::write_xlsx(indigenous_missing,
-#                     paste0(here::here(), "/Data", "/ManualReview_", "IndigenousPending_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+#                     paste0(here::here(), "/Data", "/ManualReview_", "IndigenousPendingUrgent_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
 ```
 
 **Urgent notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` with Indigenous status missing, NEPHU**
 
 ```{r}
 # Read in results of manual review
-indigenous_missing <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "IndigenousPending_", 
+indigenous_missing <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_", "IndigenousPendingUrgent_", 
                                                format(quarter_end, format = "%Y%m%d"), ".xlsx"),
 
                                         sheet     = 1,
