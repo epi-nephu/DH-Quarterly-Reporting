@@ -8,7 +8,7 @@
 # Austin proxy shenanigans
 ################################################################################
 # Note: useProxy = 1 when in Austin offices, useProxy = 0 when WFH
-con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 1)
+con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 0)
 
 ################################################################################
 # Extract case and outbreak data from PHAR
@@ -17,7 +17,7 @@ con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 1)
 # Exclude conditions not managed by LPHUs
 # Separate legionellosis into longbeachae vs. pneumophila/others
 phar_nephu <- DBI::dbGetQuery(con,
-                              glue::glue("SELECT * FROM dh_public_health.phess_release.caseevents
+                              glue::glue("SELECT * FROM dh_public_health.phess_release.caseevents_nrt
                                           WHERE EVENT_DATE >= DATE '{integration_start}'
                                           AND EVENT_DATE <= DATE '{quarter_end}'
                                           AND (ASSIGNED_LPHU = 'North Eastern')")) %>% 
