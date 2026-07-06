@@ -1,6 +1,5 @@
 # DH Quarterly Reporting
 # Author: Alana Little, NEPHU (alana.little@austin.org.au)
-# Version 2.1, 12/01/2026
 
 # Setup for DH Quarterly Reporting
 
