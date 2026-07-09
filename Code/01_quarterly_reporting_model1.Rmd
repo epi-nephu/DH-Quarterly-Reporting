@@ -1,7 +1,6 @@
 ---
 title: 'DH Quarterly Reporting - Model 1 Incidents'
 author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
-version_details: "v2.1, 12/01/2026"
 output: 
   html_document: 
     code_folding: none
@@ -9,7 +8,7 @@ output:
     toc_depth: 3
     toc_float: true
 knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q3", " DH Quarterly Reporting", " Model 1 Incidents"), output_dir = "../Reports") })
+  rmarkdown::render(input, output_file = paste0("2026 Q4", " DH Quarterly Reporting", " Model 1 Incidents"), output_dir = "../Reports") })
 ---
 
 ```{css, echo = FALSE}
@@ -92,6 +91,7 @@ For the purposes of reporting a Model 1 incident refers to a one or more of the 
 * Higher than expected cases caused by or suspected to be caused by a serious pathogen
 
 * A high risk of exposure to a hazard by a population
+
 :::
 
 ## Total number of Model 1 Incidents
@@ -137,6 +137,9 @@ Model 1 incidents were defined as:
 # Closed outbreaks
 nephu_incident_outbreaks <- outbreaks_nephu %>%
   dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>% 
+  #
+  # Q4 2026 only - exclude Kinn Thai Hvittingfoss - part of statewide Model 3 outbreak
+  dplyr::filter(event_id != "320266259290") %>% 
   #
   dplyr::group_by(organism_cause) %>% 
   dplyr::summarise(n = n()) %>% 
@@ -211,7 +214,7 @@ nephu_rare <- completed_nephu %>%
 nephu_highrisk <- completed_nephu %>% 
   dplyr::filter(condition %in% incident_highrisk) %>% 
   dplyr::filter(travel_overseas == "Yes") %>%
-  dplyr::filter(work_status %in% c("Employed", "Child in child/day care"))
+  dplyr::filter(work_status %in% c("Employed", "Child in child/day care") | !is.na(occupation))
 
 ################################################################################
 # Uncomment this section as required

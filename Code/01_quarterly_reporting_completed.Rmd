@@ -1,7 +1,6 @@
 ---
 title: 'DH Quarterly Reporting - Completed Notifications'
 author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
-version_details: "v2.1, 12/01/2026"
 output: 
   html_document: 
     code_folding: none
@@ -9,7 +8,7 @@ output:
     toc_depth: 3
     toc_float: true
 knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q3", " DH Quarterly Reporting", " Completed Notifications"), output_dir = "../Reports") })
+  rmarkdown::render(input, output_file = paste0("2026 Q4", " DH Quarterly Reporting", " Completed Notifications"), output_dir = "../Reports") })
 ---
 
 ```{css, echo = FALSE}
@@ -274,9 +273,6 @@ completed_nephu <- cases_nephu %>%
     TRUE ~ "No")) %>% 
   #
   dplyr::filter(completed_quarter == "Yes") %>% 
-  #
-  # Q2 2026 only - exclude bulk closure of historical gono cases
-  dplyr::filter(!c(condition == "Gonococcal infection" & event_date < lubridate::ymd("2025-10-24") & investigation_completed_date == lubridate::ymd("2025-10-24"))) %>% 
   #
   dplyr::filter(!event_classification %in% c("Not notifiable", "Rejected")) %>%
   #

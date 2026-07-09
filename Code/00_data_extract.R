@@ -1,6 +1,5 @@
 # DH Quarterly Reporting
 # Author: Alana Little, NEPHU (alana.little@austin.org.au)
-# Version 2.1, 12/01/2026
 
 # Data extraction from PHAR for DH Quarterly Reporting
 
@@ -8,7 +7,11 @@
 # Austin proxy shenanigans
 ################################################################################
 # Note: useProxy = 1 when in Austin offices, useProxy = 0 when WFH
-con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = 0)
+proxy_status <- dplyr::case_when(Sys.getenv("http_proxy") == "http://server340v.armc.org.au:8080" ~ 1,
+                                 TRUE ~ 0)
+
+# Connect to PHAR
+con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = proxy_status, EnableQueryResultDownload = 0)
 
 ################################################################################
 # Extract case and outbreak data from PHAR
@@ -43,10 +46,16 @@ phar_nephu <- DBI::dbGetQuery(con,
                 lga,
                 assigned_lphu,
                 indigenous_status,
+                atsi_status_collection_attempted,
                 investigation_status,
                 investigation_completed_date,
                 reinvestigation_status,
                 reinvestigation_status_date)
+
+phessid_nephu <- phar_nephu %>% 
+  pull(phess_id)
+
+phessid_nephu <- glue::glue_collapse(glue::glue("'{phessid_nephu}'"), sep = ", ")
 
 # Select all notifications signed out to LPHUs for follow-up during reporting period
 phar_signouts <- DBI::dbGetQuery(con,
@@ -60,7 +69,8 @@ phar_signouts <- DBI::dbGetQuery(con,
 
 # Select risk factor information for Model 1 incident calculations
 phar_risk <- DBI::dbGetQuery(con,
-                             glue::glue("SELECT * FROM dh_public_health.phess_release.caseexposures")) %>% 
+                             glue::glue("SELECT * FROM dh_public_health.phess_release.caseexposures_nrt
+                                         WHERE EVENT_ID IN ({phessid_nephu})")) %>% 
   janitor::clean_names() %>% 
   #
   dplyr::select(phess_id = event_id,
@@ -75,7 +85,8 @@ phar_risk <- DBI::dbGetQuery(con,
   dplyr::distinct(phess_id, .keep_all = TRUE)
 
 phar_occupation <- DBI::dbGetQuery(con,
-                                   glue::glue("SELECT * FROM dh_public_health.phess_release.caseworkstudycare")) %>% 
+                                   glue::glue("SELECT * FROM dh_public_health.phess_release.caseworkstudycare
+                                               WHERE EVENT_ID IN ({phessid_nephu})")) %>% 
   janitor::clean_names() %>% 
   #
   dplyr::select(phess_id = event_id,
