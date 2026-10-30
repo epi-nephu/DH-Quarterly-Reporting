@@ -1,7 +1,88 @@
 # DH Quarterly Reporting
 # Author: Alana Little, NEPHU (alana.little@austin.org.au)
 
-# Data extraction from PHAR for DH Quarterly Reporting
+# Setup and extract data from PHAR for DH Quarterly Reporting
+
+################################################################################
+# Load packages
+################################################################################
+# Install the pacman package if you don't already have it
+if (!require("pacman")) install.packages("pacman")
+
+pacman::p_load(tidyverse,
+               janitor,
+               lubridate,
+               here,
+               odbc,
+               DBI,
+               glue,
+               rmarkdown,
+               knitr,
+               kableExtra,
+               writexl)
+
+################################################################################
+# Define dates for reporting period
+################################################################################
+integration_start <- lubridate::ymd("2022-06-30")
+
+quarter_start <- lubridate::ymd("2026-07-01")
+quarter_end   <- lubridate::ymd("2026-09-30")
+
+reporting_period <- "2027 Q1"
+
+################################################################################
+# Define constants
+################################################################################
+# NEPHU LGAs
+nephu_lgas <- c("Banyule (C)", "Boroondara (C)", "Darebin (C)", "Hume (C)",
+                "Knox (C)", "Manningham (C)", "Maroondah (C)", "Nillumbik (S)",
+                "Whitehorse (C)", "Whittlesea (C)", "Yarra (C)", "Yarra Ranges (S)")
+
+lga_name_sql <- glue::glue_collapse(glue::glue("'{nephu_lgas}'"), sep = ", ")
+
+# Urgent conditions (FBWB disease excluded)
+conditions_urgent <- c("Anthrax", 
+                       "Botulism", 
+                       "Candida auris", 
+                       "Cholera",
+                       "Diphtheria", 
+                       #"Food-borne or water-borne illness",
+                       "Haemolytic Uraemic Syndrome", 
+                       "Haemophilus influenzae type B infection", 
+                       "Hepatitis A",
+                       "Invasive Group A Streptococcus",
+                       "Japanese encephalitis",
+                       "Legionellosis",
+                       "Listeriosis",
+                       "Lyssavirus - Australian Bat Lyssavirus",
+                       "Lyssavirus - other",
+                       "Measles",
+                       "Meningococcal infection",
+                       "Middle East Respiratory Syndrome (MERS)",
+                       "Mpox",
+                       "Murray Valley encephalitis virus infection",
+                       "Paratyphoid",
+                       "Plague",
+                       "Poliomyelitis",
+                       "Rabies",
+                       "Severe Acute Respiratory Syndrome (SARS)",
+                       "Smallpox",
+                       "Tularaemia",
+                       "Typhoid",
+                       "Viral haemorrhagic fevers",
+                       "Yellow fever")
+
+# TRA conditions
+conditions_tra <- c("Carbapenemase producing acinetobacter",
+                    "Carbapenemase producing enterobacteriaceae",
+                    "Carbapenemase producing pseudomonas",
+                    "VanA Vancomycin resistant enterococcus")
+
+# Lyssaviruses
+conditions_lyssa <- c("Lyssavirus - Australian Bat Lyssavirus",
+                      "Lyssavirus - other",
+                      "Rabies")
 
 ################################################################################
 # Austin proxy shenanigans
@@ -22,11 +103,12 @@ con <- DBI::dbConnect(odbc::odbc(), "PHAR", useProxy = proxy_status, EnableQuery
 phar_nephu <- DBI::dbGetQuery(con,
                               glue::glue("SELECT * FROM dh_public_health.phess_release.caseevents_nrt
                                           WHERE EVENT_DATE >= DATE '{integration_start}'
-                                          AND EVENT_DATE <= DATE '{quarter_end}'
-                                          AND (ASSIGNED_LPHU = 'North Eastern')")) %>% 
+                                          AND EVENT_DATE <= DATE '{quarter_end}'")) %>% 
   janitor::clean_names() %>% 
   #
   dplyr::filter(event_type %in% c("Case", "Contact/exposed person")) %>%
+  #
+  dplyr::filter(lga %in% nephu_lgas | assigned_lphu == "North Eastern") %>% 
   #
   dplyr::filter(!condition %in% c("Anaphylaxis",
                                   "Blood lead greater than 5 ug/dL",
@@ -52,11 +134,6 @@ phar_nephu <- DBI::dbGetQuery(con,
                 reinvestigation_status,
                 reinvestigation_status_date)
 
-phessid_nephu <- phar_nephu %>% 
-  pull(phess_id)
-
-phessid_nephu <- glue::glue_collapse(glue::glue("'{phessid_nephu}'"), sep = ", ")
-
 # Select all notifications signed out to LPHUs for follow-up during reporting period
 phar_signouts <- DBI::dbGetQuery(con,
                                  glue::glue("SELECT * FROM dh_public_health.phess_release.caseepiactions
@@ -67,35 +144,7 @@ phar_signouts <- DBI::dbGetQuery(con,
                 datetime_signed_dh = epi_noted_when,
                 datetime_signed_lphu = epi_ticked_acknowledged_when)
 
-# Select risk factor information for Model 1 incident calculations
-phar_risk <- DBI::dbGetQuery(con,
-                             glue::glue("SELECT * FROM dh_public_health.phess_release.caseexposures_nrt
-                                         WHERE EVENT_ID IN ({phessid_nephu})")) %>% 
-  janitor::clean_names() %>% 
-  #
-  dplyr::select(phess_id = event_id,
-                pep_cab = antibiotic_prophylaxis_recommended_for_contacts,
-                pep_vax = immunisation_recommended_for_contacts,
-                travel_overseas = risk_factors_travel_overseas_country_specify) %>% 
-  #
-  dplyr::mutate(travel_overseas = dplyr::case_when(
-    !is.na(travel_overseas) ~ "Yes",
-    TRUE ~ NA_character_)) %>% 
-  #
-  dplyr::distinct(phess_id, .keep_all = TRUE)
-
-phar_occupation <- DBI::dbGetQuery(con,
-                                   glue::glue("SELECT * FROM dh_public_health.phess_release.caseworkstudycare
-                                               WHERE EVENT_ID IN ({phessid_nephu})")) %>% 
-  janitor::clean_names() %>% 
-  #
-  dplyr::select(phess_id = event_id,
-                work_status = work_study_care,
-                occupation) %>% 
-  #
-  dplyr::distinct(phess_id, .keep_all = TRUE)
-
-# Select NEPHU outbreaks for Model 1 incident calculations
+# Select NEPHU outbreaks
 phar_outbreaks <- DBI::dbGetQuery(con,
                                   glue::glue("SELECT * FROM dh_public_health.phess_release.outbreakevents")) %>% 
   janitor::clean_names() %>% 
@@ -106,7 +155,7 @@ phar_outbreaks <- DBI::dbGetQuery(con,
 DBI::dbDisconnect(con)
 
 ################################################################################
-# Data wrangling - cases
+# Data wrangling
 ################################################################################
 # Read in conditions reference list
 reference_conditions <- readxl::read_xlsx(paste0(here::here(), "/Data/ConditionsReferenceList", ".xlsx"),
@@ -120,7 +169,7 @@ reference_conditions <- readxl::read_xlsx(paste0(here::here(), "/Data/Conditions
   #
   dplyr::distinct(condition, .keep_all = TRUE)
 
-# Join condition and risk factor information to case data
+# Join condition and signout information to case data
 cases_nephu <- phar_nephu %>% 
   dplyr::left_join(phar_signouts, by = "phess_id") %>%
   #
@@ -129,16 +178,5 @@ cases_nephu <- phar_nephu %>%
                 date_signed_dh   = lubridate::date(datetime_signed_dh),
                 date_signed_lphu = lubridate::date(datetime_signed_lphu)) %>%
   #
-  dplyr::left_join(reference_conditions, by = "condition") %>% 
-  dplyr::left_join(phar_risk, by = "phess_id") %>% 
-  dplyr::left_join(phar_occupation, by = "phess_id")
-
-################################################################################
-# Data wrangling - outbreaks
-################################################################################
-# Outbreaks completed/closed during reporting period
-outbreaks_nephu <- phar_outbreaks %>% 
-  dplyr::mutate(investigation_completed_date = lubridate::ymd(investigation_completed_date)) %>% 
-  #
-  dplyr::filter(investigation_completed_date >= quarter_start & investigation_completed_date <= quarter_end)
+  dplyr::left_join(reference_conditions, by = "condition") 
 

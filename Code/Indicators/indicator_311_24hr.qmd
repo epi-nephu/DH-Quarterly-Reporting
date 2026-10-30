@@ -1,93 +1,22 @@
 ---
-title: 'DH Quarterly Reporting - Initial Reponse Within 24hr'
-author_details: "Alana Little, NEPHU (alana.little@austin.org.au)"
-output: 
-  html_document: 
-    code_folding: none
-    toc: true
-    toc_depth: 3
-    toc_float: true
-knit: (function(input, ...) {
-  rmarkdown::render(input, output_file = paste0("2026 Q4", " DH Quarterly Reporting", " Response 24hr"), output_dir = "../Reports") })
+title-block: false
 ---
 
-```{css, echo = FALSE}
-/* */ 
-.main-container {
-    max-width: 1000px;
-}
+## Urgent notifications with response within 24hr
 
-h1.title {
-  font-weight: bold;
-  font-size: 20px;
-  color: #191d43;
-}
+<div style="height: 0.5em;"></div>
 
-h1 {
-  font-weight: bold;
-  font-size: 20px;
-  color: #5bc788;
-}
+:::{.indicator_box}
+**Measure 3.1.1a**
 
-h2 {
-  font-weight: bold;
-  font-size: 18px;
-  color: #5bc788;
-}
-
-h3 {
-  font-weight: bold;
-  font-size: 16px;
-  color: #5bc788;
-}
-
-body {
-  font-size: 14px;
-}
-
-.infobox {
-  padding-top: 10px;
-  padding-left: 10px;
-  padding-right: 10px;
-  background: white;
-  color: black;
-  border: 2px solid #5BC788;
-  border-radius: 10px;
-}
-```
-
-
-```{r, echo = FALSE, message = FALSE}
-#
-knitr::opts_chunk$set(echo    = FALSE, 
-                      warning = FALSE, 
-                      message = FALSE)
-
-options(knitr.kable.NA = '--')
-
-source(paste0(here::here(), "/Code", "/00_setup.R"))
-```
-
-
-```{r}
-#
-source(paste0(here::here(), "/Code", "/00_data_extract.R"))
-```
-
-:::{style="height: 1em;"}
-:::
-
-:::{.infobox}
-**Indicator SQ1.2**
-
-**Proportion of public health responses initiated for urgent notifications within 24 hours**
+**Percentage of public health responses initiated for urgent notifications within 24 hours**
 
 Numerator: Number of urgent case and contact events signed out to NEPHU during the reporting period with public health actions initiated within 24hr of sign-out
 
 Denominator: Number of urgent case and contact events signed out to NEPHU during the reporting period
 :::
 
-## Percentage of urgent conditions responded to within 24 hours
+<div style="height: 0.5em;"></div>
 
 Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all notifiable conditions signed out from the Department of Health to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
 
@@ -103,12 +32,7 @@ Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m
 
 Urgent notifiable conditions include the following: anthrax, botulism, *Candida auris*, cholera, diphtheria, haemolytic uraemic syndrome, *Haemophilus influenzae* type B, Hepatitis A, invasive Group A *Streptococcus*, invasive meningococcal disease, Japanese encephalitis, legionellosis, listeriosis, lyssavirus (Australian Bat Lyssavirus, rabies, and others), measles, Middle East Respiratory Syndrome, mpox, Murray Valley encephalitis, paratyphoid, plague, poliomyelitis, Severe Acute Respiratory Syndrome, smallpox, tularaemia, typhoid, viral haemorrhagic fevers, and yellow fever.
 
-The time between the first sign-out by the Department of Health and the first acknowledgment by NEPHU staff was calculated as a proxy measure of whether public health actions had commenced. Notifications where the time between sign-out and acknowledgement was greater than 24 hours (1,440 minutes) were manually reviewed in PHESS to check whether public health actions had commenced within 24 hours of the initial laboratory or doctor notification.
-
-:::{style="height: 1em;"}
-:::
-
-### Before manual review
+The time between the first sign-out by the Department of Health and the first acknowledgement by NEPHU staff was calculated as a proxy measure of whether public health actions had commenced. Notifications where the time between sign-out and acknowledgement was greater than 24 hours (1,440 minutes) were manually reviewed in PHESS to check whether public health actions had commenced within 24 hours of the initial laboratory or doctor notification.
 
 ```{r}
 #
@@ -120,9 +44,8 @@ signed_nephu <- cases_nephu %>%
   #
   dplyr::arrange(phess_id, date_signed_dh) %>%
   #
-  dplyr::distinct(phess_id, .keep_all = TRUE)
-
-signed_nephu <- signed_nephu %>% 
+  dplyr::distinct(phess_id, .keep_all = TRUE) %>% 
+  #
   dplyr::mutate(datetime_signed_dh   = lubridate::ymd_hms(datetime_signed_dh),
                 datetime_signed_lphu = lubridate::ymd_hms(datetime_signed_lphu),
                 #
@@ -144,12 +67,7 @@ signed_nephu <- signed_nephu %>%
   #
   dplyr::arrange(condition,
                  event_date)
-```
 
-**Time between DH sign-out and initial LPHU response for urgent notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, NEPHU**
-
-```{r}
-#
 results_24hr <- signed_nephu %>%
   dplyr::mutate(response_24hr = factor(response_24hr,
                                        levels = c("Within 24hr", 
@@ -178,6 +96,24 @@ results_24hr <- signed_nephu %>%
                 more_than_24hr,
                 percent_within_24hr)
 
+results_total <- results_24hr %>% 
+  dplyr::filter(short_name == "Total")
+```
+
+### Before manual review
+
+<div style="height: 0.5em;"></div>
+
+:::{.results_box}
+`r results_total$percent_within_24hr`% (`r format(results_total$within_24hr, big.mark = ",")`/`r format(results_total$within_24hr + results_total$more_than_24hr, big.mark = ",")`) of all urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had public health actions initiated within 24hr of sign-out.
+:::
+
+<div style="height: 1em;"></div>
+
+**Time between DH sign-out and initial LPHU response for urgent notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`, by condition, NEPHU**
+
+```{r}
+#
 results_24hr %>% 
   knitr::kable(table.attr = "style = \"color: black;\"",
                align      = "lrrr",
@@ -186,13 +122,7 @@ results_24hr %>%
                               "More than 24hr",
                               "Percent within 24hr")) %>% 
   #
-  kableExtra::kable_styling(full_width = FALSE,
-                            position   = "center",
-                            html_font  = "Arial",
-                            font_size  = 12) %>%
-  #
-  kableExtra::column_spec(2:4,
-                          width = "1.5in") %>% 
+  kableExtra::kable_styling() %>%
   #
   kableExtra::row_spec(row  = 0,
                        bold = TRUE) %>% 
@@ -207,35 +137,36 @@ results_24hr %>%
 
 
 ```{r}
-################################################################################
-# Uncomment this code chunk as required
-################################################################################
 # Create and export the linelist of cases that need manual checking
-# manual_24hr <- signed_nephu %>%
-#   dplyr::filter(response_24hr == "More than 24hr") %>%
-#   #
-#   dplyr::arrange(short_name,
-#                  event_date) %>%
-#   #
-#   dplyr::mutate(event_date       = format(event_date, "%d/%m/%Y"),
-#                 date_signed_dh   = format(date_signed_dh, "%d/%m/%Y"),
-#                 date_signed_lphu = format(date_signed_lphu, "%d/%m/%Y")) %>%
-#   #
-#   dplyr::select(`PHESS ID` = phess_id,
-#                 `Event date` = event_date,
-#                 `Condition` = short_name,
-#                 `Final event classification` = event_classification,
-#                 `Signed out by DH` = date_signed_dh,
-#                 `Acknowledged by LPHU` = date_signed_lphu) %>%
-#   #
-#   dplyr::mutate(`Notes` = "",
-#                 `Response within 24hr` = "")
-# 
-# writexl::write_xlsx(manual_24hr,
-#                     paste0(here::here(), "/Data", "/ManualReview_", "24hr_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+manual_24hr <- signed_nephu %>%
+  dplyr::filter(response_24hr == "More than 24hr") %>%
+  #
+  dplyr::arrange(short_name,
+                 event_date) %>%
+  #
+  dplyr::mutate(event_date       = format(event_date, "%d/%m/%Y"),
+                date_signed_dh   = format(date_signed_dh, "%d/%m/%Y"),
+                date_signed_lphu = format(date_signed_lphu, "%d/%m/%Y")) %>%
+  #
+  dplyr::select(`PHESS ID` = phess_id,
+                `Event date` = event_date,
+                `Condition` = short_name,
+                `Final event classification` = event_classification,
+                `Signed out by DH` = date_signed_dh,
+                `Acknowledged by LPHU` = date_signed_lphu) %>%
+  #
+  dplyr::mutate(`Notes` = "",
+                `Response within 24hr` = "")
+
+if (!file.exists(paste0(here::here(), "/Data", "/ManualReview_", "24hr_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))) {
+  
+  writexl::write_xlsx(manual_24hr,
+                    paste0(here::here(), "/Data", "/ManualReview_", "24hr_", format(quarter_end, format = "%Y%m%d"), ".xlsx"))
+  
+}
 ```
 
-### After manual review
+<div style="height: 1em;"></div>
 
 ```{r}
 # Read in results of manual review
@@ -248,11 +179,15 @@ linelist_24hr <- readxl::read_xlsx(paste0(here::here(), "/Data", "/ManualReview_
   dplyr::rename(response_24hr = response_within_24hr)
 
 # Merge data from manual review
-signed_nephu <- signed_nephu %>%
-  dplyr::rows_update(linelist_24hr %>%
-                       dplyr::select(phess_id,
-                                     response_24hr),
-                     by = "phess_id")
+if(nrow(linelist_24hr) > 0){
+  
+  signed_nephu <- signed_nephu %>%
+    dplyr::rows_update(linelist_24hr %>%
+                         dplyr::select(phess_id,
+                                       response_24hr),
+                       by = "phess_id")
+
+}
 
 results_24hr <- signed_nephu %>%
   dplyr::mutate(response_24hr = factor(response_24hr,
@@ -281,81 +216,73 @@ results_total <- results_24hr %>%
   dplyr::filter(short_name == "Total")
 ```
 
-:::{.infobox}
+### After manual review
+
+<div style="height: 0.5em;"></div>
+
+:::{.results_box}
 `r results_total$percent_within_24hr`% (`r format(results_total$within_24hr, big.mark = ",")`/`r format(results_total$within_24hr + results_total$more_than_24hr, big.mark = ",")`) of all urgent notifications signed out to NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")` had public health actions initiated within 24hr of sign-out.
 :::
 
-:::{style="height: 1em;"}
-:::
+<div style="height: 1em;"></div>
 
 **Time between DH signout and initial LPHU response for urgent notifiable conditions, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
 #
-results_24hr %>%
+results_24hr %>% 
   knitr::kable(table.attr = "style = \"color: black;\"",
                align      = "lrrr",
                col.names  = c("Condition",
                               "Within 24hr",
                               "More than 24hr",
-                              "Percent within 24hr")) %>%
+                              "Percent within 24hr")) %>% 
   #
-  kableExtra::kable_styling(full_width = FALSE,
-                            position   = "center",
-                            html_font  = "Arial",
-                            font_size  = 12) %>%
-  #
-  kableExtra::column_spec(2:4,
-                          width = "1.5in") %>%
+  kableExtra::kable_styling() %>%
   #
   kableExtra::row_spec(row  = 0,
-                       bold = TRUE) %>%
+                       bold = TRUE) %>% 
   #
   kableExtra::row_spec(nrow(results_24hr),
                        bold      = TRUE,
-                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>%
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;") %>% 
   #
   kableExtra::add_header_above(c(" " = 1,
                                  "Time between DH signout and initial LPHU response" = 3))
 ```
 
-:::{style="height: 1em;"}
-:::
+<div style="height: 1em;"></div>
 
 **Urgent notifiable conditions with time between DH signout and initial LPHU response >24 hours, NEPHU, notifications signed out between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
 
 ```{r}
 #
-linelist_24hr %>%
-  dplyr::select(phess_id,
-                condition,
-                signed_out_by_dh,
-                acknowledged_by_lphu,
-                notes) %>%
-  #
-  knitr::kable(table.attr = "style = \"color: black;\"",
-               align      = "lllllll",
-               col.names  = c("PHESS ID",
-                              "Condition",
-                              "Signed out (DH)",
-                              "Acknowledged (NEPHU)",
-                              "Manual review outcome")) %>%
-  #
-  kableExtra::kable_styling(full_width = TRUE,
-                            position   = "center",
-                            html_font  = "Arial",
-                            font_size  = 12) %>%
-  #
-  kableExtra::column_spec(3:4,
-                          width = "1in") %>%
-  #
-  kableExtra::row_spec(row  = 0,
-                       bold = TRUE) %>%
-  #
-  kableExtra::row_spec(nrow(linelist_24hr),
-                       extra_css = "border-bottom: 2px solid lightgray;")
+if(nrow(linelist_24hr) > 0) {
+  
+  linelist_24hr %>%
+    dplyr::select(phess_id,
+                  condition,
+                  signed_out_by_dh,
+                  acknowledged_by_lphu,
+                  notes) %>%
+    #
+    knitr::kable(table.attr = "style = \"color: black;\"",
+                 align      = "lllllll",
+                 col.names  = c("PHESS ID",
+                                "Condition",
+                                "Signed out (DH)",
+                                "Acknowledged (NEPHU)",
+                                "Manual review outcome")) %>%
+    #
+    kableExtra::kable_styling() %>%
+    #
+    kableExtra::row_spec(row  = 0,
+                         bold = TRUE) %>%
+    #
+    kableExtra::row_spec(nrow(linelist_24hr),
+                         extra_css = "border-bottom: 2px solid lightgray;")
+}
 ```
 
-<br/>
+`r if(nrow(linelist_24hr) == 0) paste0("There were no urgent notifications with time between DH signout and initial LPHU response >24 hours.")`
 
-<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

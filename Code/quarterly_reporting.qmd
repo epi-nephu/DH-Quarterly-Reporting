@@ -1,0 +1,103 @@
+---
+title-block: false
+
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-expand: true
+    toc-location: left
+    anchor-sections: false
+    embed-resources: true
+    css: styles.css
+    echo: false
+    warning: false
+    message: false
+    grid: 
+      body-width: 1250px
+---
+
+```{r}
+#
+options(knitr.kable.NA = '--')
+
+here::i_am("Code/quarterly_reporting.qmd")
+```
+
+
+```{r}
+# Read in functions
+#source(here::here("Code", "Functions", "f_histogram_exposure.R"))
+#source(here::here("Code", "Functions", "f_activity_analyses.R"))
+```
+
+
+```{r}
+# Read in and wrangle data
+source(here::here("Code", "data_prep.R"))
+```
+
+
+```{r}
+#| out-width: "50%"
+knitr::include_graphics(here::here("Images", "nephu_logo.png"))
+```
+
+# DH Quarterly Reporting
+
+## `r reporting_period`: `r format(quarter_start, format = "%d/%m/%Y")` to `r format(quarter_end, format = "%d/%m/%Y")` {.unnumbered .unlisted}
+
+<div style="height: 1em;"></div>
+
+```{r}
+#| output: asis
+child <- knitr::knit_child(here::here("Code", "Indicators", "indicator_311_24hr.qmd"), quiet = TRUE)
+
+cat(child, sep = "\n")
+```
+
+<div style="height: 1em;"></div>
+
+```{r}
+#| output: asis
+child <- knitr::knit_child(here::here("Code", "Indicators", "indicator_313_signouts.qmd"), quiet = TRUE)
+
+cat(child, sep = "\n")
+```
+
+<div style="height: 1em;"></div>
+
+```{r}
+#| output: asis
+child <- knitr::knit_child(here::here("Code", "Indicators", "indicator_314_outbreaks.qmd"), quiet = TRUE)
+
+cat(child, sep = "\n")
+```
+
+<div style="height: 1em;"></div>
+
+```{r}
+#| output: asis
+child <- knitr::knit_child(here::here("Code", "Indicators", "indicator_317_completed_same.qmd"), quiet = TRUE)
+
+cat(child, sep = "\n")
+```
+
+<div style="height: 1em;"></div>
+
+```{r}
+#| output: asis
+child <- knitr::knit_child(here::here("Code", "Indicators", "indicator_318_completed_any.qmd"), quiet = TRUE)
+
+cat(child, sep = "\n")
+```
+
+<div style="height: 1em;"></div>
+
+```{r}
+#| output: asis
+child <- knitr::knit_child(here::here("Code", "Indicators", "indicator_319_indigenous.qmd"), quiet = TRUE)
+
+cat(child, sep = "\n")
+```
+

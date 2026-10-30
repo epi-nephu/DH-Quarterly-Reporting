@@ -1,0 +1,86 @@
+#toc-title {
+  color: black;
+  font-weight: bold;
+}
+
+nav#TOC a span {
+  color: inherit !important;
+}
+
+.table-responsive {
+  width: auto !important;
+  max-width: fit-content;
+  margin: auto;
+}
+
+h1 {
+  font-family: "Karla";
+  text-align: center;
+  font-weight: bold;
+  font-size: 20pt;
+  color: #191D43;
+}
+
+h2.unnumbered {
+  font-family: "Karla";
+  text-align: center;
+  font-weight: bold;
+  font-size: 18pt;
+  color: #191D43;
+}
+
+h2 {
+  font-family: "Karla";
+  font-weight: bold;
+  font-size: 16pt;
+  color: #5BC788;
+  margin-top: 0pt;
+  margin-bottom: 0pt;
+  border-bottom: none;
+}
+
+h3 {
+  font-family: "Karla";
+  font-weight: bold;
+  font-size: 14pt;
+  color: #5BC788;
+  margin-top: 5pt;
+}
+
+body {
+  font-family: "Karla";
+  font-size: 12pt;
+}
+
+li > ul {
+  margin-top: 0pt;
+  margin-bottom: 5pt;
+}
+
+.indicator_box {
+  padding-top: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  background: white;
+  color: black;
+  border: 2px solid #5BC788;
+  border-radius: 10px;
+}
+
+.results_box {
+  padding-top: 15px;
+  padding-left: 10px;
+  padding-right: 10px;
+  background: white;
+  color: black;
+  text-align: center;
+  border: 2px solid #5BC788;
+  border-radius: 10px;
+}
+
+.footnote {
+  font-family: "Karla";
+  font-size: 10pt;
+  font-style: italic;
+}
+

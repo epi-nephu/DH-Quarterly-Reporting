@@ -1,0 +1,86 @@
+---
+title-block: false
+---
+
+## Total outbreaks managed
+
+<div style="height: 0.5em;"></div>
+
+:::{.indicator_box}
+**Measure 3.1.4**
+
+**Number of outbreaks allocated to the LPHU**
+
+Numerator: Number of outbreak events managed by NEPHU during the reporting period
+:::
+
+<div style="height: 0.5em;"></div>
+
+Data were extracted from PHESS via PHAR on `r format(Sys.Date(), format = "%d/%m/%Y")` for all outbreak events managed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`. 
+
+* Confirmed and Probable outbreaks were excluded.
+
+* Outbreaks due to any pathogen were included.
+
+* Conditions not managed by LPHUs (anaphylaxis, elevated blood lead, human biosecurity reports, and tuberculosis) were excluded.
+
+* Transmission Risk Area (TRA) events were excluded.
+
+```{r}
+#
+outbreaks_nephu <- phar_outbreaks %>%
+  dplyr::filter(event_classification %in% c("Confirmed", "Probable")) %>%
+  dplyr::filter(event_date >= quarter_start | investigation_completed_date >= quarter_start) %>% 
+  dplyr::filter(!condition %in% conditions_tra) %>% 
+  #
+  dplyr::mutate(
+    condition = dplyr::case_when(
+      condition == "Food-borne or water-borne illness" ~ as.character(organism_cause),
+      condition == "Influenza" ~ as.character(organism_cause),
+      TRUE ~ as.character(condition)),
+    #
+    condition = dplyr::case_when(
+      stringr::str_detect(condition, "Influenza") ~ "Influenza",
+      TRUE ~ as.character(condition))) %>% 
+  #
+  dplyr::group_by(condition_type, condition) %>% 
+  dplyr::summarise(n = n()) %>% 
+  dplyr::ungroup() %>% 
+  #
+  janitor::adorn_totals()
+
+outbreaks_total <- outbreaks_nephu %>% 
+  dplyr::filter(condition_type == "Total") %>% 
+  pull(n)
+```
+
+<div style="height: 0.5em;"></div>
+
+:::{.results_box}
+`r format(outbreaks_total, big.mark = ",")` outbreaks were managed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`.
+:::
+
+<div style="height: 1em;"></div>
+
+**Total number of outbreaks managed by NEPHU between `r format(quarter_start, format = "%d/%m/%Y")` and `r format(quarter_end, format = "%d/%m/%Y")`**
+
+```{r}
+#
+outbreaks_nephu %>% 
+  knitr::kable(table.attr  = "style = \"color: black;\"",
+               format.args = list(big.mark = ","),
+               align       = "llr",
+               col.names   = c("Reporting group",
+                               "Condition",
+                               "Outbreaks (n)")) %>% 
+  #
+  kableExtra::kable_styling() %>%
+  #
+  kableExtra::row_spec(row  = 0,
+                       bold = TRUE) %>% 
+  #
+  kableExtra::row_spec(nrow(outbreaks_nephu),
+                       bold      = TRUE,
+                       extra_css = "border-top: 2px solid lightgray; border-bottom: 2px solid lightgray;")
+```
+
